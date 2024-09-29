@@ -13,28 +13,32 @@ TARGET_NAME := main
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif
+
+C_SUFFIX := .c
+O_SUFFIX := .o
+
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
-OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
-OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,$(C_SUFFIX)*)))
+OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix $(O_SUFFIX), $(notdir $(basename $(SRC)))))
+OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix $(O_SUFFIX), $(notdir $(basename $(SRC)))))
 
-DISTCLEAN_LIST := $(OBJ) \
-                  $(OBJ_DEBUG)
-CLEAN_LIST := $(TARGET) \
-			  $(TARGET_DEBUG) \
-			  $(DISTCLEAN_LIST)
+CLEAN_LIST := $(OBJ)			\
+			  $(OBJ_DEBUG)		\
+			  $(TARGET)			\
+			  $(TARGET_DEBUG) 	\
+			  $(DISTCLEAN_LIST)	\
 
 default: makedir all
 
 $(TARGET): $(OBJ)
 	$(CC) -o $@ $(OBJ) $(CFLAGS)
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
+$(OBJ_PATH)/%$(O_SUFFIX): $(SRC_PATH)/%$(C_SUFFIX)*
 	$(CC) $(COBJFLAGS) -o $@ $<
 
-$(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
+$(DBG_PATH)/%$(O_SUFFIX): $(SRC_PATH)/%$(C_SUFFIX)*
 	$(CC) $(COBJFLAGS) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
@@ -54,8 +58,3 @@ debug: $(TARGET_DEBUG)
 clean:
 	@echo CLEAN $(CLEAN_LIST)
 	@rm -f $(CLEAN_LIST)
-
-.PHONY: distclean
-distclean:
-	@echo CLEAN $(DISTCLEAN_LIST)
-	@rm -f $(DISTCLEAN_LIST)
