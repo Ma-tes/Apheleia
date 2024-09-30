@@ -1,11 +1,18 @@
+#Aphelia makefile contains simple configuration
+#of multiplatform gcc debugger.
 CC ?= gcc
 CFLAGS :=
 CXXFLAGS :=
 DBGFLAGS := -g
 COBJFLAGS := $(CFLAGS) -c
 
+#Binary path representation of execution file.
 BIN_PATH := bin
+
+#Objects path representation for '.o' files.
 OBJ_PATH := obj
+
+#Source path representation.
 SRC_PATH := src
 DBG_PATH := debug
 
