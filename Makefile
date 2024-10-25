@@ -1,22 +1,15 @@
-#Aphelia makefile contains simple configuration
-#of multiplatform gcc debugger.
 CC ?= gcc
-CFLAGS :=
+CFLAGS := `sdl2-config --libs --cflags` -ggdb3 -O0 --std=c99 -Wall -F/Library/Frameworks -framework SDL2 -framework SDL2_image -lm
 CXXFLAGS :=
 DBGFLAGS := -g
 COBJFLAGS := $(CFLAGS) -c
 
-#Binary path representation of execution file.
 BIN_PATH := bin
-
-#Objects path representation for '.o' files.
 OBJ_PATH := obj
-
-#Source path representation.
 SRC_PATH := src
 DBG_PATH := debug
-
-TARGET_NAME := main
+ 
+TARGET_NAME := $(DBG_PATH)/apheleia
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif
@@ -40,7 +33,7 @@ CLEAN_LIST := $(OBJ)			\
 default: makedir all
 
 $(TARGET): $(OBJ)
-	$(CC) -o $@ $(OBJ) $(CFLAGS)
+	$(CC) -o $(DBG_PATH) $(OBJ) $(CFLAGS)
 
 $(OBJ_PATH)/%$(O_SUFFIX): $(SRC_PATH)/%$(C_SUFFIX)*
 	$(CC) $(COBJFLAGS) -o $@ $<
