@@ -118,6 +118,10 @@ void execute_initialization_callbacks(engine_state **states, int count) {
     }
 }
 
+/**
+ * Executes update state, with additional frame sampling
+ * and framerate difference calculation.
+**/
 static void execute_update_callback(engine_state *state) {
     state->last_performance_counter = state->current_performance_counter;
     state->current_performance_counter = SDL_GetPerformanceCounter();
@@ -133,9 +137,11 @@ static void execute_update_callback(engine_state *state) {
     }
 }
 
+/**
+ * Recursively executes all events in `global_information->external_events`.
+ * Count of events is determinated by `MAX_EVENT_HANDLER`.
+**/
 static void execute_event_handlers(global_engine_information *global_information) {
-    //TODO: Possible for limitation, with proper
-    //allocator with indexed values.
     int event_count = MAX_EVENT_HANDLER;
     for (int i = 0; i < event_count; i++)
     {
@@ -143,6 +149,14 @@ static void execute_event_handlers(global_engine_information *global_information
     }
 }
 
+/**
+ * Starts engine process by calling `execute_initialization_callback` and
+ * executing engine processing loop, with `SDL_PollEvent`.
+ * 
+ * After all events are handled, it executes:
+ * `execute_update_callback(engine_state)`
+ * `execute_render_components(global_engine_information*)`
+**/
 void start_engine(engine_state *state) {
     execute_initialization_callback(state);
     SDL_Event current_event;
@@ -158,7 +172,18 @@ void start_engine(engine_state *state) {
     }
 }
 
-
+/**
+ * USE ONLY FOR MULTIPLE WINDOWS, WITH SEPARETED RENDERERS.
+ * 
+ * Starts multiple engine process by calling each `execute_initialization_callback` and
+ * executing individual engine processing loops, with `SDL_PollEvent`.
+ * 
+ * After all events are handled, it executes individual:
+ * `execute_update_callback(engine_state)`
+ * `execute_render_components(global_engine_information*)`
+ * 
+ * The running state of all engines is setted by `engines_running`.
+**/
 void start_engines(engine_state **states, int count) {
     execute_initialization_callbacks(states, count);
     SDL_Event events[count];
