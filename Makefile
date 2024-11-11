@@ -1,5 +1,5 @@
 CC ?= gcc
-CFLAGS := `sdl2-config --libs --cflags` -ggdb3 -O0 --std=c99 -Wall -F/Library/Frameworks -framework SDL2 -framework SDL2_image -lm
+CFLAGS := -I/opt/homebrew/include -L/opt/homebrew/lib -lSDL2
 CXXFLAGS :=
 DBGFLAGS := -g
 COBJFLAGS := $(CFLAGS) -c
@@ -9,7 +9,7 @@ OBJ_PATH := obj
 SRC_PATH := src
 DBG_PATH := debug
  
-TARGET_NAME := $(DBG_PATH)/apheleia
+TARGET_NAME := apheleia
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif
@@ -33,8 +33,7 @@ CLEAN_LIST := $(OBJ)			\
 default: makedir all
 
 $(TARGET): $(OBJ)
-	$(CC) -o $(DBG_PATH) $(OBJ) $(CFLAGS)
-
+	$(CC) $(SRC_PATH)/main.c $(OBJ) $(CFLAGS) -o $(TARGET_NAME)
 $(OBJ_PATH)/%$(O_SUFFIX): $(SRC_PATH)/%$(C_SUFFIX)*
 	$(CC) $(COBJFLAGS) -o $@ $<
 
@@ -42,7 +41,7 @@ $(DBG_PATH)/%$(O_SUFFIX): $(SRC_PATH)/%$(C_SUFFIX)*
 	$(CC) $(COBJFLAGS) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+	$(CC) $(SRC_PATH)/main_apheleia.c $(CFLAGS) $(OBJ_DEBUG) $(DBGFLAGS) -o $@
 
 .PHONY: makedir
 makedir:

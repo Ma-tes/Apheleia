@@ -9,6 +9,9 @@
                 "-fansi-escape-codes",
                 "-g",
                 "${file}",
+                "-I/opt/homebrew/include",
+                "-L/opt/homebrew/lib",
+                "-lSDL2",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
