@@ -33,10 +33,23 @@ global_engine_information create_initialization_global(SDL_Window *window, int w
     return global_informations;
 }
 
+//Function declaration for initialization engine state.
 typedef void(*initialization_function)(global_engine_information *global);
+
+//Function declaration for update engine state.
 typedef void(*update_function)(global_engine_information *global, float delta_time);
+
+//Function declaration for render engine state.
 typedef void(*render_function)(global_engine_information *global);
 
+/**
+ * A structure representing function engine states:
+ *  `initialization_function`,
+ *  `update_function`,
+ *  `render_function`. 
+ * 
+ * An `engine_state` also contains informations about counters and ticks.
+**/
 typedef struct engine_state {
     initialization_function initialization_f;
     update_function update_f;

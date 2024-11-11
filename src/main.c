@@ -20,7 +20,6 @@
 #define TEST_TEXTURE_PATH "../bin/main_texture_sheet.bmp"
 
 vector2 sprites_position = ZERO_VECTOR2;
-vector2 test_sprites_position = ZERO_VECTOR2;
 enum test_tiles { FIRST, SECOND, THIRD, FOURTH, ERROR};
 
 tile_information tile_informations[TILE_COUNT] = {
@@ -75,15 +74,29 @@ void initialization(global_engine_information *global) {
 
 void update(global_engine_information *global, float delta_time) {
     sprites_position.y += 0.25 * delta_time;
-    test_sprites_position.y += 0.5 * delta_time;
 }
 
 void render(global_engine_information *global) {
     current_texture_index = 0;
     SDL_Renderer *renderer = global->renderer;
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderClear(renderer);
+    draw_text("TODO", (vector2) { 62, 28 }, colors[WHITE], global->font, 24);
+    draw_text("TODO", (vector2) { 60, 30 }, colors[BLUE], global->font, 24);
+
+
+    char *text = "[0] - Create better folder structure.\n[1] - Create working collision system.\n[2] - Make refactor of engine core.";
+    draw_text(text, (vector2) { 60, 60 }, colors[WHITE], global->font, 12);
+
+    for (int i = 0; i < TILE_COUNT; i++)
+    {
+        int relative_x_position = 150 * i;
+        tile_informations[i].draw_tile_f(renderer, tile_informations[i],
+            (vector2) { relative_x_position, sprites_position.y }, colors[WHITE], (vector2) { 50, 50 });
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderDrawLine(renderer, relative_x_position, sprites_position.y,
+            global->input_handler->cursor.position.x, global->input_handler->cursor.position.y);
+    }
 }
 
 void log_initialization(global_engine_information *global) {
