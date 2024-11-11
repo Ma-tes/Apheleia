@@ -12,6 +12,10 @@
 //It could be change by following field: `state->global_information->framerate_limit`.
 #define DEFAULT_FRAMERATE_LIMITATION 60
 
+#if !defined(SDL_INIT_FLAGS) 
+    #define SDL_INIT_FLAGS SDL_INIT_VIDEO
+#endif
+
 static bool engines_running = false;
 
 /**
@@ -62,16 +66,32 @@ typedef struct engine_state {
     global_engine_information *global_information;
 } engine_state;
 
-static void execute_initialization_callback(engine_state *state) { 
-    SDL_Init(SDL_INIT_VIDEO);
-
+/**
+ * Executes the initialization state, with additional configuration.
+ * 
+ * Starts `SDL_Init` with `SDL_INIT_FLAGS`(default: `SDL_INIT_VIDEO`)
+ * and then initializates external_components, events and font system.
+**/
+static void execute_initialization_callback(engine_state *state) {
+    SDL_Init(SDL_INIT_FLAGS);
     global_engine_information *global_informations = state->global_information;
+
+    //Allocates `input_handler` with default(ZERO_VECTOR)
+    //values for mouse positions.
     create_input(&global_informations->input_handler);
+
+    //Creates `SDL_Renderer`, with related flags specified
+    //as a `RENDERING_FLAGS`.
     create_renderer(&state->global_information->renderer, state->global_information->window);
 
+    //Initializates the first rendering component.
     state->global_information->external_components[0] = state->render_f;
+
+    //Initializates the first event.
     state->global_information->external_events[0] = input_event;
 
+    //If font was initialized, then it sets `SDL_Renderer`
+    //to `font_information`of current engine instance.
     if(state->global_information->font != NULL) {
         state->global_information->font->renderer = state->global_information->renderer;
     }
@@ -82,6 +102,14 @@ static void execute_initialization_callback(engine_state *state) {
     state->global_information->is_running = true;
 }
 
+/**
+ * USE ONLY FOR MULTIPLE WINDOWS, WITH SEPARETED RENDERERS.
+ * 
+ * Executes multiple initialization states, with additional configuration.
+ * 
+ * Starts `SDL_Init` with `SDL_INIT_FLAGS`(default: `SDL_INIT_VIDEO`)
+ * and then initializates external_components, events and font system.
+**/
 void execute_initialization_callbacks(engine_state **states, int count) {
     engines_running = true;
     for (int i = 0; i < count; i++) {
