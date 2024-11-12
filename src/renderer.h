@@ -1,9 +1,9 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include "texture_manager.h"
-#include "engine_global.h"
-#include "state_definitions.h"
+#include "drawing/texture_manager.h"
+#include "engine_utilities/engine_global.h"
+#include "engine_utilities/state_definitions.h"
 
 #define RENDERING_DRIVER -1
 

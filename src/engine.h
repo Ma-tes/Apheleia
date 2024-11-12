@@ -1,14 +1,14 @@
 #pragma once 
 
 #include <SDL2/SDL.h>
-#include <math.h>
 #include <stdbool.h>
+#include <math.h>
 #include "renderer.h"
 #include "input.h"
-#include "engine_events.h"
-#include "engine_global.h"
+#include "engine_utilities/engine_events.h"
+#include "engine_utilities/engine_global.h"
 
-//The default engine value for framerate limitation.
+//Default engine value for framerate limitation.
 //It could be change by following field: `state->global_information->framerate_limit`.
 #define DEFAULT_FRAMERATE_LIMITATION 60
 

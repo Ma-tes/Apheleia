@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include "vector.h"
+#include "math/vector.h"
 
 #define CURSOR_NUMBER_SCANCODES 3
 

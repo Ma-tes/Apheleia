@@ -1,9 +1,9 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include "vector.h"
-#include "color.h"
-#include "tile.h"
+#include "math/vector.h"
+#include "drawing/color.h"
+#include "drawing/tile.h"
 
 #define UNKNOWN_CHARACTER '?'
 #define SPACE_CHARACTER ' '

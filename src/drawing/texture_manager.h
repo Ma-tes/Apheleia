@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vector.h"
-#include "color.h"
 #include <SDL2/SDL.h>
+#include "../math/vector.h"
+#include "../drawing/color.h"
 
 #define CURRENT_TEXTURE_ATLAS textures_storage.textures[current_texture_index]
 

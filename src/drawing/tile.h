@@ -1,10 +1,10 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include "vector.h"
-#include "color.h"
-#include "texture_manager.h"
-#include "state_definitions.h"
+#include "../math/vector.h"
+#include "../drawing/color.h"
+#include "../drawing/texture_manager.h"
+#include "../engine_utilities/state_definitions.h"
 
 enum { ENTITY_TILE, BLOCK_TILE, ITEM_TILE, ERROR_TILE };
 
