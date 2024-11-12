@@ -4,7 +4,12 @@
 #include "../math/vector.h"
 #include "../drawing/color.h"
 #include "../drawing/texture_manager.h"
-#include "../engine_utilities/state_definitions.h"
+
+//Default engine value representing maximum
+//count of component handlers.
+#if !defined(TILE_COUNT)
+    #define TILE_COUNT 1
+#endif
 
 enum { ENTITY_TILE, BLOCK_TILE, ITEM_TILE, ERROR_TILE };
 
@@ -26,10 +31,6 @@ typedef struct tile_information {
 extern tile_information tile_informations[TILE_COUNT];
 
 tile_information *get_first_tile_by_type(int type) {
-    #if !defined(TILE_COUNT)
-        #error TILE_COUNT is not defined.
-        return NULL;
-    #endif
     for (int i = 0; i < TILE_COUNT; i++)
     {
         tile_information *current_tile = &tile_informations[i];

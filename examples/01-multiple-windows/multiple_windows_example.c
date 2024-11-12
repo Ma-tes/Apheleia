@@ -1,3 +1,33 @@
+/**
+ * The first example of Apheleia engine, the example was written in 12.11.2024.
+ * 
+ * It shows a basic template of using:
+ *  1. Font system
+ *  2. Texture tiles
+ *  3. Multiple rendering engine units, with individual windows
+ * 
+ * Current file represent main starting functionality, moreover
+ * the second rendering unit is represented in file: `log_window.h`.
+ * 
+ * Global states and engines declarations are in file: `global_state.h`.
+**/
+
+/**
+ * IMPORTANT ENGINE DEFINITIONS, WHICH MUST BE DEFINIED.
+ *  - If not, the values will be set automaticaly to default values.
+ * 
+ * Current represented values of engine declarations are those default ones.
+ * 
+ * 1. #define TILE_COUNT 1
+ * 2. #define RENDERING_FLAGS SDL_RENDERER_ACCELERATED
+ * 3. #define SDL_CLEAR_COLOR colors[BLACK]
+ * 4. #define MAX_EVENT_HANDLER 1
+ * 5. #define MAX_COMPONENT_HANDLER 1
+ * 6. #define SDL_INIT_FLAGS SDL_INIT_VIDEO
+ * 7. #define MAX_TEXTURES 4
+**/
+#define TILE_COUNT 4
+
 #include <SDL2/SDL.h>
 #include "../../src/drawing/tile.h"
 #include "../../src/drawing/color.h"
@@ -7,8 +37,18 @@
 #include "log_window.h"
 #include "global_state.h"
 
+/**
+ * Character representation of font atlas in file: "bin/main_texture_sheet.bmp".
+**/
+#define FONT_SYMBOLS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.+-*/=()[]{}?!:;%%"
+
+/**
+ * Color representation of font atlas key color, for creating transparent tiles.
+**/
+#define TEXTURE_ATLAS_KEY_COLOR (color) { 159, 159, 159 }
+
 vector2 sprites_position = ZERO_VECTOR2;
-enum test_tiles { FIRST, SECOND, THIRD, FOURTH, ERROR};
+enum { FIRST, SECOND, THIRD, FOURTH, ERROR};
 
 tile_information tile_informations[TILE_COUNT] = {
     [FIRST] = {
@@ -41,10 +81,9 @@ tile_information tile_informations[TILE_COUNT] = {
     },
 };
 
-
 void initialization(global_engine_information *global) {
     SDL_Texture *current_texture = create_texture(TEST_TEXTURE_PATH, BMP, global->renderer,
-        (color) { 159, 159, 159 });
+        TEXTURE_ATLAS_KEY_COLOR);
 
     add_texture_atlas((texture_atlas_information){
         .texture = current_texture,
@@ -64,9 +103,10 @@ void render(global_engine_information *global) {
     draw_text("TODO", (vector2) { 62, 28 }, colors[WHITE], global->font, 24);
     draw_text("TODO", (vector2) { 60, 30 }, colors[BLUE], global->font, 24);
 
-
     char *text = "[0] - Create better folder structure.\n[1] - Create working collision system.\n[2] - Make refactor of engine core.";
     draw_text(text, (vector2) { 60, 60 }, colors[WHITE], global->font, 12);
+
+    draw_text("int x = 0;\nint y = 1;\nif(x < y)\n{\n   x = 1;\n}", (vector2) { 60, 120 }, colors[WHITE], global->font, 12);
 
     for (int i = 0; i < TILE_COUNT; i++)
     {
@@ -93,17 +133,13 @@ int main() {
         .render_f = log_render,
     };
     engine_default_global = create_initialization_global(
-        SDL_CreateWindow(
-            "Test window",
-            WINDOW_POSITION_X, WINDOW_POSITION_y,
+        SDL_CreateWindow( "Test window", WINDOW_POSITION_X, WINDOW_POSITION_y,
             WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL
         ), WINDOW_WIDTH, WINDOW_HEIGHT
     );
 
     logging_engine_default_global = create_initialization_global(
-        SDL_CreateWindow(
-            "Logging window",
-            LOGGING_WINDOW_POSITION_X, LOGGING_WINDOW_POSITION_y,
+        SDL_CreateWindow( "Logging window", LOGGING_WINDOW_POSITION_X, LOGGING_WINDOW_POSITION_y,
             LOGGING_WINDOW_WIDTH, LOGGING_WINDOW_HEIGHT, SDL_WINDOW_OPENGL
         ), LOGGING_WINDOW_WIDTH, LOGGING_WINDOW_HEIGHT
     );
@@ -119,16 +155,14 @@ int main() {
         (vector2) {
             .x = 0,
             .y = 0
-        },
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.+-*/=()[]?!:%%", 16);
+        }, FONT_SYMBOLS, 16);
 
     logging_engine_default_global.font = (font_information*)malloc(sizeof(font_information));
     initializte_global_font(logging_engine_default_global.font,
         (vector2) {
             .x = 0,
             .y = 0
-        },
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.+-*/=()[]?!:%%", 16);
+        }, FONT_SYMBOLS, 16);
 
     engine_state *engines[2] = { &engine, &logging_engine };
     start_engines(engines, 2);
