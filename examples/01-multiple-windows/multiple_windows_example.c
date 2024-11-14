@@ -1,5 +1,5 @@
 /**
- * The first example of Apheleia engine, the example was written in 12.11.2024.
+ * The first example of Apheleia engine, which was written in 12.11.2024.
  * 
  * It shows a basic template of using:
  *  1. Font system
@@ -47,9 +47,15 @@
 **/
 #define TEXTURE_ATLAS_KEY_COLOR (color) { 159, 159, 159 }
 
+/**
+ * Global testing vector for all tiles.
+**/
 vector2 sprites_position = ZERO_VECTOR2;
-enum { FIRST, SECOND, THIRD, FOURTH, ERROR};
 
+/**
+ * Global extern initialization of manualy created tiles.
+**/
+enum { FIRST, SECOND, THIRD, FOURTH, ERROR};
 tile_information tile_informations[TILE_COUNT] = {
     [FIRST] = {
         .name = "First tile",
@@ -82,9 +88,17 @@ tile_information tile_informations[TILE_COUNT] = {
 };
 
 void initialization(global_engine_information *global) {
+    /**
+     * Firstly we create texture, where we have to specify
+     * it's own path, file format and tranparent key color.
+    **/
     SDL_Texture *current_texture = create_texture(TEST_TEXTURE_PATH, BMP, global->renderer,
         TEXTURE_ATLAS_KEY_COLOR);
 
+    /**
+     * Secondly we define tile mapper, where we have to
+     * set a size of related texture and size of individual tile.
+    **/
     add_texture_atlas((texture_atlas_information){
         .texture = current_texture,
         .size = (vector2) { .x = 1024, .y = 1024 },
@@ -100,13 +114,16 @@ void render(global_engine_information *global) {
     current_texture_index = 0;
     SDL_Renderer *renderer = global->renderer;
 
-    draw_text("TODO", (vector2) { 62, 28 }, colors[WHITE], global->font, 24);
-    draw_text("TODO", (vector2) { 60, 30 }, colors[BLUE], global->font, 24);
+    draw_text("TODO", (vector2) { 62, 28 },
+        colors[WHITE], global->font, 24);
+    draw_text("TODO", (vector2) { 60, 30 },
+        colors[BLUE], global->font, 24);
 
-    char *text = "[0] - Create better folder structure.\n[1] - Create working collision system.\n[2] - Make refactor of engine core.";
-    draw_text(text, (vector2) { 60, 60 }, colors[WHITE], global->font, 12);
+    draw_text("[0] - Create better folder structure.\n[1] - Create working collision system.\n[2] - Make refactor of engine core.",
+        (vector2) { 60, 60 }, colors[WHITE], global->font, 12);
 
-    draw_text("int x = 0;\nint y = 1;\nif(x < y)\n{\n   x = 1;\n}", (vector2) { 60, 120 }, colors[WHITE], global->font, 12);
+    draw_text("int x = 0;\nint y = 1;\nif(x < y)\n{\n   x = 1;\n}",
+        (vector2) { 60, 120 }, colors[WHITE], global->font, 12);
 
     for (int i = 0; i < TILE_COUNT; i++)
     {
