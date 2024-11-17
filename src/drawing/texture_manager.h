@@ -38,11 +38,6 @@ static struct {
 static int current_texture_index = 0;
 
 void render_texture_target(SDL_Renderer *renderer, vector2 tile_position, vector2 position, vector2 size) {
-    if(position.x > CURRENT_TEXTURE_ATLAS.size.x || position.x < 0
-        || position.y > CURRENT_TEXTURE_ATLAS.size.y || position.y < 0) {
-        //TODO: Handle exception.
-        return;
-    }
     SDL_Rect texture_area = {
         .x = tile_position.x,
         .y = tile_position.y,

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#define COLORS_COUNT 8
+#define COLORS_COUNT 9 
 
 enum color_types {
     WHITE,
@@ -12,7 +12,8 @@ enum color_types {
     BLUE,
     YELLOW,
     BROWN,
-    GRAY
+    GRAY,
+    DARK_GRAY
 };
 
 typedef struct color {
@@ -30,4 +31,5 @@ static color colors[COLORS_COUNT] = {
     [YELLOW] = (color) { 255, 255, 0},
     [BROWN] = (color) { 165, 42, 42},
     [GRAY] = (color) { 105, 105, 105},
+    [DARK_GRAY] = (color) { 32, 32, 32},
 };

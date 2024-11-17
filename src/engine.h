@@ -162,6 +162,7 @@ void start_engine(engine_state *state) {
     SDL_Event current_event;
     while(state->global_information->is_running) {
         state->last_framerate_ticks = SDL_GetTicks();
+        state->global_information->input_handler->buttons[last_key_code].is_key_pressed = false;
         while(SDL_PollEvent(&current_event)) {
             state->global_information->event = &current_event;
             execute_event_handlers(state->global_information);
@@ -197,6 +198,7 @@ void start_engines(engine_state **states, int count) {
             }
 
             current_state->last_framerate_ticks = SDL_GetTicks();
+            current_state->global_information->input_handler->buttons[last_key_code].is_key_pressed = false;
             while(SDL_PollEvent(&events[i])) {
                 current_state->global_information->event = &events[i];
                 execute_event_handlers(current_state->global_information);

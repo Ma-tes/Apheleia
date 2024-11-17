@@ -4,6 +4,8 @@
 #include "engine_global.h"
 #include "../input.h"
 
+static int last_key_code;
+
 /**
  * Event handler for input events, including `SDL_MOUSEMOTION`
  * and all key events(Represented by enum `input_key_state`).
@@ -29,23 +31,23 @@ void input_event(struct global_engine_information *global_information) {
         case SDL_MOUSEBUTTONUP: {
             SDL_Scancode key_code = global_information->event->key.keysym.scancode;
             SDL_Event event = *global_information->event;
-            if(key_code > SDL_NUM_SCANCODES) {
-                /**
-                 * Gets related mouse key by current event, which is
-                 * based on predefiend SDL values.
-                 * 
-                 * SDL_BUTTON_LEFT: L_BUTTON;
-                 * SDL_BUTTON_RIGHT: R_BUTTON;
-                 * SDL_BUTTON_MIDDLE: M_BUTTON;
-                **/
-                int mouse_key_state = get_mouse_key_state(event);
 
-                global_information->input_handler->buttons[mouse_key_state].key_state =
-                    event.type == SDL_MOUSEBUTTONDOWN ? KEY_PRESSED : KEY_UP;
-            }
-            else {
-                global_information->input_handler->buttons[key_code].key_state =
-                    event.type == SDL_KEYDOWN ?  KEY_PRESSED : KEY_UP;
+            /**
+             * If it's mouse event it will get related mouse key by
+             * current event, which is based on predefiend SDL values.
+             * 
+             * SDL_BUTTON_LEFT: L_BUTTON;
+             * SDL_BUTTON_RIGHT: R_BUTTON;
+             * SDL_BUTTON_MIDDLE: M_BUTTON;
+            **/
+            int relative_key_code =  key_code > SDL_NUM_SCANCODES ? get_mouse_key_state(event) : key_code;
+            int relative_key_state = (event.type == SDL_KEYDOWN || event.type == SDL_MOUSEBUTTONDOWN) ? KEY_PRESSED : KEY_UP;
+
+            if(relative_key_state != global_information->input_handler->buttons[relative_key_code].key_state) {
+                global_information->input_handler->buttons[relative_key_code].key_state = relative_key_state;
+                global_information->input_handler->buttons[relative_key_code].is_key_pressed = relative_key_state;
+
+                last_key_code = relative_key_code;
             }
         }
     }

@@ -51,7 +51,7 @@ typedef struct input {
 
     struct {
         enum input_key_state key_state;
-        uint64_t key_time;
+        bool is_key_pressed;
     } buttons[SDL_NUM_SCANCODES + CURSOR_NUMBER_SCANCODES];
 
 } input;

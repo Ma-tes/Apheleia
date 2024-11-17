@@ -11,7 +11,13 @@
     #define TILE_COUNT 1
 #endif
 
-enum { ENTITY_TILE, BLOCK_TILE, ITEM_TILE, ERROR_TILE };
+typedef enum tile_type {
+    ENTITY_TILE = 1 << 1,
+    BLOCK_TILE = 1 << 2,
+    COLLISION_TILE = 1 << 3,
+    ITEM_TILE = 1 << 4,
+    ERROR_TILE = 1 << 5 
+} tile_type;
 
 typedef struct tile_information tile_information;
 typedef void (*draw_tile_function)(SDL_Renderer *renderer, const tile_information tile, vector2 position, color tile_color, vector2 size);
