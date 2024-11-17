@@ -193,10 +193,10 @@ void update(global_engine_information *global, float delta_time) {
     }
 
     if(global->input_handler->buttons[SDL_SCANCODE_N].is_key_pressed) {
-        current_tile_type = COLLISION_TILE;
+        current_tile_type = BLOCK_TILE;
     }
     if(global->input_handler->buttons[SDL_SCANCODE_C].is_key_pressed) {
-        current_tile_type = BLOCK_TILE;
+        current_tile_type = COLLISION_TILE;
     }
 }
 
@@ -204,8 +204,8 @@ void render(global_engine_information *global) {
     draw_text("------=Editor=------", (vector2) { 552, 30 }, colors[GRAY], global->font, 24);
     draw_text("------=Editor=------", (vector2) { 550, 30 }, colors[WHITE], global->font, 24);
 
-    draw_text("C - Collision block", (vector2) { 1250, 30 }, collision_block_color, global->font, 12);
-    draw_text("N - Normal block", (vector2) { 1250, 60 }, colors[WHITE], global->font, 12);
+    draw_text("N - Normal block", (vector2) { 1250, 30 }, colors[WHITE], global->font, 12);
+    draw_text("C - Collision block", (vector2) { 1250, 60 }, collision_block_color, global->font, 12);
 
     int selection_index = current_tile_type / 4;
     draw_text("SELECTED", (vector2) { 1500, (selection_index * 30) + 2 }, colors[GREEN], global->font, 8);

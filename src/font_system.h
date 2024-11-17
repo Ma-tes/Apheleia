@@ -9,6 +9,13 @@
 #define SPACE_CHARACTER ' '
 #define NEW_LINE_CHARACTER '\n'
 
+/**
+ * A structure, that represents basic information holder
+ * for any font "texture": Definied by series of tiles.
+ * 
+ * Field: `tile_count`: Is related to `font_pattern`,
+ * which is used for position determination.
+**/
 typedef struct font_information {
     tile_information *font_tiles;
     SDL_Renderer *renderer;
