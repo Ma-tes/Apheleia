@@ -108,8 +108,12 @@ struct map_tile {
     tile_information *tile;
 } map_tiles[(MAP_WIDTH / 8) * (MAP_HEIGHT / 8)];
 
+int remove_block_indexes[(MAP_WIDTH / 8) * (MAP_HEIGHT / 8)];
+int remove_block_count = 0;
+
 enum { PAINT, REMOVE, CLEAR, SAVE };
 void paint_tool_action(global_engine_information*, vector2);
+void remove_tool_action(global_engine_information*, vector2);
 void clear_tool_action(global_engine_information*, vector2);
 
 struct {
@@ -124,7 +128,8 @@ struct {
     },
     [REMOVE] = {
         .code = SDL_SCANCODE_R,
-        .name = "R - Remove"
+        .name = "R - Remove",
+        .tool_action = remove_tool_action
     },
     [CLEAR] = {
         .code = SDL_SCANCODE_O,
@@ -185,7 +190,7 @@ int get_current_tool_index(input *input_handler) {
     return -1;
 }
  
-void set_position_tile(const vector2 tile_position, const vector2 tile_size, tile_information *tile) {
+void set_position_tile(const vector2 tile_position, const vector2 tile_size, tile_information *tile, const int index) {
     int current_map_tile_index = index_of_map_tile(tile_position);
     if(current_map_tile_index != -1) {
         map_tiles[current_map_tile_index].size = tile_size;
@@ -193,7 +198,7 @@ void set_position_tile(const vector2 tile_position, const vector2 tile_size, til
         return;
     }
     
-    map_tiles[map_tile_index++] = (struct map_tile){
+    map_tiles[index] = (struct map_tile){
         .position = tile_position,
         .size = tile_size,
         .tile = tile
@@ -206,7 +211,7 @@ void paint_tool_action(global_engine_information *global, vector2 mouse_position
         mouse_position, colors[GRAY], (vector2) { tile_size, tile_size });
 
     int tile_index = index_of_map_tile(relative_tile_position);
-    if(tile_index != -1 && map_tiles[tile_index].tile->type == COLLISION_TILE) {
+    if(tile_index != -1 && map_tiles[tile_index].tile != NULL && map_tiles[tile_index].tile->type == COLLISION_TILE) {
         SDL_SetRenderDrawColor(global->renderer, collision_block_color.r, collision_block_color.g, collision_block_color.b, 255);
 
         SDL_Rect collisiion_tile_rectangle = {
@@ -227,18 +232,36 @@ void paint_tool_action(global_engine_information *global, vector2 mouse_position
 
         current_tile->type = current_tile_type;
 
-        set_position_tile(relative_tile_position, (vector2) { tile_size, tile_size }, current_tile);
+        set_position_tile(relative_tile_position, (vector2) { tile_size, tile_size },
+            current_tile, remove_block_count > 0 ? remove_block_count-- : map_tile_index++);
     }
 }
 
 void remove_tool_action(global_engine_information *global, vector2 mouse_position) {
     vector2 relative_tile_position = sub(mouse_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
     int tile_index = index_of_map_tile(relative_tile_position);
+
+    if(tile_index != -1 && map_tiles[tile_index].tile != NULL) {
+        map_tiles[tile_index].tile->draw_tile_f(global->renderer, *map_tiles[tile_index].tile,
+            mouse_position, colors[RED], map_tiles[tile_index].size);
+
+        if(is_tile_place) {
+            remove_block_indexes[remove_block_count++] = tile_index;
+            free(map_tiles[tile_index].tile);
+
+            map_tiles[tile_index] = (struct map_tile) {
+                .position = ZERO_VECTOR2,
+                .size = ZERO_VECTOR2,
+                .tile = NULL
+            };
+        }
+    }
 }
 
 void clear_tool_action(global_engine_information *global, vector2 mouse_position) {
     memset(map_tiles, 0, (MAP_WIDTH / 8) * (MAP_HEIGHT / 8));
     map_tile_index = 0;
+    remove_block_count = 0;
 }
 
 void initialization(global_engine_information *global) {
@@ -267,7 +290,6 @@ void update(global_engine_information *global, float delta_time) {
      * Use `SDL_GetKeyboardState` instead of `input_handler` for
      * any precise movement implementations.
     **/
-
     const Uint8* keyboard_state = SDL_GetKeyboardState(NULL);
     is_tile_place = keyboard_state[SDL_SCANCODE_SPACE];
 
@@ -332,13 +354,15 @@ void render(global_engine_information *global) {
 
     for (int i = 0; i < map_tile_index; i++)
     {
-        tile_information current_tile = *map_tiles[i].tile;
+        if(map_tiles[i].tile != NULL) {
+            tile_information current_tile = *map_tiles[i].tile;
 
-        vector2 current_position = map_tiles[i].position;
-        vector2 relative_position = add(current_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
+            vector2 current_position = map_tiles[i].position;
+            vector2 relative_position = add(current_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
 
-        current_tile.draw_tile_f(global->renderer, current_tile,
-            relative_position, colors[WHITE], (vector2) { tile_size, tile_size });
+            current_tile.draw_tile_f(global->renderer, current_tile,
+                relative_position, colors[WHITE], (vector2) { tile_size, tile_size });
+        }
     }
 
     //TODO: Move tile rectangle calculation to update..
