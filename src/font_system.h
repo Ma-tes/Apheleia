@@ -29,6 +29,7 @@ void set_pattern_font_tiles(font_information *font, vector2 start_font_index, co
     for (int i = 0; i < font->tile_count; i++)
     {
         char *font_character = (char*)malloc(sizeof(char) * 1); font_character[0] = font_pattern[i];
+
         vector2 relative_position = {
             .x = i % max_line_characters_count,
             .y = i / max_line_characters_count
