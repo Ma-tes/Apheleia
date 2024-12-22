@@ -26,42 +26,24 @@
 
 #include "../../../src/drawing/color.h"
 
-enum old_book_color_types {
-    BACKGROUND, SECOND_BACKGROUND, FOREGROUND, OLD_DARK_GRAY, OLD_GRAY,
-    OLD_DARK_RED, OLD_RED, OLD_DARK_GREEN, OLD_GREEN, OLD_DARK_BLUE,
-    OLD_BLUE, OLD_DARK_PURPLE, OLD_PURPLE
-};
-static color old_book_colors[16] = {
-    [BACKGROUND] = (color) { 33, 42, 51 },
-    [SECOND_BACKGROUND] = (color) { 60, 67, 83 },
-    [FOREGROUND] = (color) { 230, 225, 199 },
-    [OLD_DARK_GRAY] = (color) { 45, 41, 40 },
-    [OLD_GRAY] = (color) { 64, 60, 54 },
-    [OLD_DARK_RED] = (color) { 92, 14, 2 },
-    [OLD_RED] = (color) { 121, 19, 3 },
-    [OLD_DARK_GREEN] = (color) { 49, 63, 8 },
-    [OLD_GREEN] = (color) { 79, 98, 14 },
-    [OLD_DARK_BLUE] = (color) { 13, 96, 104 },
-    [OLD_BLUE] = (color) { 19, 142, 156 },
-    [OLD_DARK_PURPLE] = (color) { 81, 61, 86 },
-    [OLD_PURPLE] = (color) { 101, 78, 109 }
-};
-
-#define TILE_COUNT 8
-#define SDL_CLEAR_COLOR old_book_colors[BACKGROUND]
+#define TILE_COUNT 78 
+#define SDL_CLEAR_COLOR (color) { .r = 244, .g = 245, .b = 249 }
 
 #include <SDL2/SDL.h>
 #include "../../../src/drawing/tile.h"
 #include "../../../src/engine_utilities/engine_global.h"
 #include "../../../src/engine.h"
 #include "../../../src/font_system.h"
+#include "../utilities/collision.h"
+#include "../utilities/tile_helper.h"
+#include "map.h"
 
 /**
  * Character representation of font atlas in file: "bin/main_texture_sheet.bmp".
 **/
 #define FONT_SYMBOLS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.+-*/=()[]{}?!:;%%"
 
-#define TEST_TEXTURE_PATH "../../../bin/main_texture_sheet.bmp"
+#define TEST_TEXTURE_PATH "../../../bin/test_sprites_2.0.bmp"
 
 /**
  * Color representation of font atlas key color, for creating transparent tiles.
@@ -92,7 +74,7 @@ static color old_book_colors[16] = {
 #define MAP_HEIGHT 960
 
 #define MAP_POSITION_X 256
-#define MAP_POSITION_Y 168
+#define MAP_POSITION_Y 128
 
 #define MOD(x, y) ((x) < (0)) ? ((y) - ((-(x)) % y)) : (x) % (y)
 
@@ -100,6 +82,16 @@ static color old_book_colors[16] = {
     SDL_SetRenderDrawColor(global->renderer, rectangle_color.r,     \
         rectangle_color.g, rectangle_color.b, 255);                 \
     SDL_RenderFillRect(global->renderer, rectangle);                \
+
+#define DRAW_BORDER_RECTANGLE(global, rectangle, rectangle_color)   \
+    SDL_SetRenderDrawColor(global->renderer, rectangle_color.r,     \
+        rectangle_color.g, rectangle_color.b, 255);                 \
+    SDL_RenderDrawRect(global->renderer, rectangle);                \
+
+#define PANEL_COLOR (color) { .r = 252, .g = 252, .b = 252 }
+
+#define TEXT_LIGHT_COLOR (color) { .r = 175, .g = 175, .b = 175 }
+#define TEXT_DARK_COLOR (color) { .r = 90, .g = 90, .b = 100 }
 
 #define TOOL_COUNT 4
 
@@ -110,7 +102,7 @@ int map_tile_index = 0;
 int tool_index = 0;
 bool is_tile_place = false;
 
-int tile_size = 64;
+int global_tile_size = 64;
 
 static SDL_Rect map_rectangle = (SDL_Rect) {
     .x = MAP_POSITION_X,
@@ -121,11 +113,7 @@ static SDL_Rect map_rectangle = (SDL_Rect) {
 
 tile_information tile_informations[TILE_COUNT];
 
-struct map_tile {
-    vector2 position;
-    vector2 size;
-    tile_information *tile;
-} map_tiles[(MAP_WIDTH / 8) * (MAP_HEIGHT / 8)];
+static map_tile map_tiles[(MAP_WIDTH / 8) * (MAP_HEIGHT / 8)];
 
 int remove_block_indexes[(MAP_WIDTH / 8) * (MAP_HEIGHT / 8)];
 int remove_block_count = 0;
@@ -134,6 +122,7 @@ enum { PAINT, REMOVE, CLEAR, SAVE };
 void paint_tool_action(global_engine_information*, vector2);
 void remove_tool_action(global_engine_information*, vector2);
 void clear_tool_action(global_engine_information*, vector2);
+void save_tool_action(global_engine_information*, vector2);
 
 struct {
     SDL_Keycode code;
@@ -157,7 +146,8 @@ struct {
     },
     [SAVE] = {
         .code = SDL_SCANCODE_I,
-        .name = "I - Save"
+        .name = "I - Save",
+        .tool_action = save_tool_action
     },
 };
 
@@ -178,27 +168,6 @@ void set_editor_tiles(const int start_index, const int tile_row_count) {
     }
 }
 
-bool is_colliding(const SDL_Rect first_object, const SDL_Rect second_object) {
-    bool collision_x = ((first_object.x + first_object.w) > second_object.x) &&
-        ((first_object.x) < (second_object.x + second_object.w));
-
-    bool collision_y = ((first_object.y + first_object.h) > second_object.y) &&
-        ((first_object.y) < (second_object.y + second_object.h));
-
-    return collision_x && collision_y;
-}
-
-int index_of_map_tile(const vector2 tile_position) {
-    for (int i = 0; i < map_tile_index; i++)
-    {
-        vector2 map_tile_position = map_tiles[i].position;
-        if(tile_position.x == map_tile_position.x && tile_position.y == map_tile_position.y) {
-            return i;
-        }
-    }
-    return -1;
-}
-
 int get_current_tool_index(input *input_handler) {
     for (int i = 0; i < TOOL_COUNT; i++)
     {
@@ -210,63 +179,68 @@ int get_current_tool_index(input *input_handler) {
 }
  
 void set_position_tile(const vector2 tile_position, const vector2 tile_size, tile_information *tile, const int index) {
-    int current_map_tile_index = index_of_map_tile(tile_position);
+    int current_map_tile_index = index_of_map_tile(map_tiles, current_tile_index, tile_position);
     if(current_map_tile_index != -1) {
         map_tiles[current_map_tile_index].size = tile_size;
-        map_tiles[current_map_tile_index].tile = tile;
+        map_tiles[current_map_tile_index].tile = *tile;
         return;
     }
     
     map_tiles[index] = (struct map_tile){
         .position = tile_position,
         .size = tile_size,
-        .tile = tile
+        .tile = *tile
     };
 }
 
 void paint_tool_action(global_engine_information *global, vector2 mouse_position) {
     vector2 relative_tile_position = sub(mouse_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
     tile_informations[current_tile_index].draw_tile_f(global->renderer, tile_informations[current_tile_index],
-        mouse_position, old_book_colors[OLD_DARK_GRAY], (vector2) { tile_size, tile_size });
+        mouse_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size });
 
-    int tile_index = index_of_map_tile(relative_tile_position);
-    if(tile_index != -1 && map_tiles[tile_index].tile != NULL &&
-        map_tiles[tile_index].tile->type == COLLISION_TILE) {
+    int tile_index = index_of_map_tile(map_tiles, map_tile_index, relative_tile_position);
+    if(tile_index != -1 && map_tiles[tile_index].tile.draw_tile_f != NULL &&
+        map_tiles[tile_index].tile.type == COLLISION_TILE) {
 
-        map_tiles[tile_index].tile->draw_tile_f(global->renderer, *map_tiles[tile_index].tile,
-            mouse_position, old_book_colors[OLD_DARK_PURPLE], (vector2) { tile_size, tile_size });
+        map_tiles[tile_index].tile.draw_tile_f(global->renderer, map_tiles[tile_index].tile,
+            mouse_position, colors[BLUE], (vector2) { global_tile_size, global_tile_size });
     }
 
-    if(is_tile_place) {
+   bool is_tile_same = map_tiles[tile_index].tile.identificator == tile_informations[current_tile_index].identificator;
+   if(is_tile_place && !is_tile_same) {
         tile_information *current_tile = malloc(sizeof(tile_information));
         current_tile->name = tile_informations[current_tile_index].name;
         current_tile->identificator = tile_informations[current_tile_index].identificator;
         current_tile->index_position = tile_informations[current_tile_index].index_position;
         current_tile->draw_tile_f = tile_informations[current_tile_index].draw_tile_f;
 
-        current_tile->type = current_tile_type;
+        current_tile->type = (int)current_tile_type;
 
-        set_position_tile(relative_tile_position, (vector2) { tile_size, tile_size },
+        set_position_tile(relative_tile_position, (vector2) { global_tile_size, global_tile_size },
             current_tile, remove_block_count > 0 ? remove_block_count-- : map_tile_index++);
+    }
+
+    if(is_tile_place && is_tile_same && map_tiles[tile_index].tile.type != (int)current_tile_type) {
+        map_tiles[tile_index].tile.type = (int)current_tile_type;
     }
 }
 
 void remove_tool_action(global_engine_information *global, vector2 mouse_position) {
     vector2 relative_tile_position = sub(mouse_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
-    int tile_index = index_of_map_tile(relative_tile_position);
+    int tile_index = index_of_map_tile(map_tiles, map_tile_index, relative_tile_position);
 
-    if(tile_index != -1 && map_tiles[tile_index].tile != NULL) {
-        map_tiles[tile_index].tile->draw_tile_f(global->renderer, *map_tiles[tile_index].tile,
-            mouse_position, old_book_colors[OLD_RED], map_tiles[tile_index].size);
+    if(tile_index != -1 && map_tiles[tile_index].tile.draw_tile_f != NULL) {
+        map_tiles[tile_index].tile.draw_tile_f(global->renderer, map_tiles[tile_index].tile,
+            mouse_position, colors[RED], map_tiles[tile_index].size);
 
         if(is_tile_place) {
             remove_block_indexes[remove_block_count++] = tile_index;
-            free(map_tiles[tile_index].tile);
+            //free(map_tiles[tile_index].tile);
 
             map_tiles[tile_index] = (struct map_tile) {
                 .position = ZERO_VECTOR2,
                 .size = ZERO_VECTOR2,
-                .tile = NULL
+                .tile = (NULL)
             };
         }
     }
@@ -276,6 +250,11 @@ void clear_tool_action(global_engine_information *global, vector2 mouse_position
     memset(map_tiles, 0, (MAP_WIDTH / 8) * (MAP_HEIGHT / 8));
     map_tile_index = 0;
     remove_block_count = 0;
+}
+
+void save_tool_action(global_engine_information *global, vector2 mouse_position) {
+    save_map_tiles(map_tiles, map_tile_index, "test.bin");
+    tool_index = 0;
 }
 
 void initialization(global_engine_information *global) {
@@ -296,7 +275,7 @@ void initialization(global_engine_information *global) {
         .tile_offset_size = (vector2) { .x = 64, .y = 64 }
     });
 
-    set_editor_tiles(98, 16);
+    set_editor_tiles(32, 10);
 }
 
 void update(global_engine_information *global, float delta_time) {
@@ -325,55 +304,74 @@ void update(global_engine_information *global, float delta_time) {
     tool_index = current_tool_index != - 1 ? current_tool_index : tool_index;
 }
 
-static SDL_Rect title_rectangle = (SDL_Rect) { .x = 0, .y = 0, .w = WINDOW_WIDTH, .h = 40 };
-static SDL_Rect tool_rectangle = (SDL_Rect) { .x = 0, .y = 40, .w = WINDOW_WIDTH, .h = 120 };
+static SDL_Rect title_rectangle = (SDL_Rect) { .x = MAP_POSITION_X - 8, .y = 16, .w = MAP_WIDTH, .h = 64 };
+static SDL_Rect title_rectangle_shadow = (SDL_Rect) { .x = MAP_POSITION_X + 8, .y = 32, .w = MAP_WIDTH, .h = 64 };
+
+static SDL_Rect tool_rectangle = (SDL_Rect) { .x = (MAP_POSITION_X + MAP_WIDTH) + 32, .y = 0, .w = WINDOW_WIDTH - ((MAP_POSITION_X + MAP_WIDTH) + 32), .h = WINDOW_HEIGHT };
+static SDL_Rect tile_rectangle = (SDL_Rect) { .x = 0, .y = 0, .w = MAP_POSITION_X - 32, .h = WINDOW_HEIGHT };
 
 void render(global_engine_information *global) {
-    DRAW_RECTANGLE(global, &title_rectangle, old_book_colors[BACKGROUND])
-    draw_text("ApheCAD", (vector2) { 552, 30 }, old_book_colors[FOREGROUND], global->font, 16);
-    draw_text("ApheCAD", (vector2) { 550, 30 }, old_book_colors[GRAY], global->font, 16);
+    DRAW_RECTANGLE(global, &map_rectangle, PANEL_COLOR)
+    DRAW_RECTANGLE(global, &tool_rectangle, PANEL_COLOR)
+    DRAW_RECTANGLE(global, &tile_rectangle, PANEL_COLOR)
 
-    DRAW_RECTANGLE(global, &tool_rectangle, old_book_colors[SECOND_BACKGROUND])
-    draw_text("N - Normal block", (vector2) { 1250, 30 }, old_book_colors[FOREGROUND], global->font, 12);
-    draw_text("C - Collision block", (vector2) { 1250, 60 }, old_book_colors[OLD_DARK_PURPLE], global->font, 12);
+    DRAW_RECTANGLE(global, &title_rectangle_shadow, colors[GRAY])
+    DRAW_RECTANGLE(global, &title_rectangle, colors[DARK_GRAY])
 
-    int selection_index = current_tile_type / 4;
-    draw_text("SELECTED", (vector2) { 1500, (selection_index * 30) + 2 }, old_book_colors[OLD_GREEN], global->font, 8);
+    draw_text("Apheleia editor", (vector2) { MAP_POSITION_X + (MAP_WIDTH / 3), 32 }, colors[WHITE], global->font, 32);
 
+    draw_text("N - Normal block", (vector2) { tool_rectangle.x + 32, 30 },
+        current_tile_type == COLLISION_TILE ? colors[BLACK] : colors[GREEN], global->font, 12);
+    draw_text("C - Collision block", (vector2) { tool_rectangle.x + 32, 60 },
+        current_tile_type == COLLISION_TILE ? colors[GREEN] : colors[BLACK], global->font, 12);
+
+    int current_tile_y_position = 32;
     for (int i = 0; i < TILE_COUNT; i++)
     {
-        draw_log_message("index: ", "%lu", (void*)(u_long)tile_informations[i].identificator,
-            (vector2) { 48, (((i + 1) * 32)) + 8 }, old_book_colors[FOREGROUND], global->font, 8);
-
-        vector2 tile_position = (vector2) { 8, ((i + 1) * 32) };
-        tile_informations[i].draw_tile_f(global->renderer, tile_informations[i],
-            tile_position, old_book_colors[FOREGROUND], (vector2) { 24, 24 });
-
+        if(i % 4 == 0) { current_tile_y_position = (i + 1) * 12; }
+        vector2 tile_position = (vector2) { (32 + ((i % 4) * 40)), (MAP_POSITION_Y + 32) + current_tile_y_position };
         if(current_tile_index == i) {
-            draw_text("SELECTED", add(tile_position, (vector2) { 128, 8 }), old_book_colors[OLD_GREEN], global->font, 8);
+            SDL_Rect select_tile_rectangle = (SDL_Rect) {
+                .x = tile_position.x-4,
+                .y = tile_position.y-4,
+                .w = 40,
+                .h = 40
+            };
+            DRAW_RECTANGLE(global, &select_tile_rectangle, colors[GREEN])
         }
+
+        tile_informations[i].draw_tile_f(global->renderer, tile_informations[i],
+            tile_position, colors[WHITE], (vector2) { 32, 32 });
     }
 
     for (int i = 0; i < TOOL_COUNT; i++)
     {
-        vector2 current_position = (vector2) { (i + 4) * 80, 80};
-        color current_color = i == tool_index ? old_book_colors[OLD_GREEN] : old_book_colors[FOREGROUND];
+        vector2 current_position = (vector2) { tool_rectangle.x + 32, (MAP_POSITION_Y + tool_rectangle.y) + ((i + 1) * 32)};
+        color current_color = i == tool_index ? colors[GREEN] : colors[BLACK];
 
-        draw_text(editor_tools[i].name, current_position, current_color, global->font, 12);
+        draw_text(editor_tools[i].name, current_position, current_color, global->font, 16);
     }
 
-    DRAW_RECTANGLE(global, &map_rectangle, old_book_colors[SECOND_BACKGROUND])
 
     for (int i = 0; i < map_tile_index; i++)
     {
-        if(map_tiles[i].tile != NULL) {
-            tile_information current_tile = *map_tiles[i].tile;
+        if(map_tiles[i].tile.draw_tile_f != NULL) {
+            tile_information current_tile = map_tiles[i].tile;
 
             vector2 current_position = map_tiles[i].position;
             vector2 relative_position = add(current_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
 
+            if(current_tile_type == COLLISION_TILE && current_tile.type == COLLISION_TILE) {
+                SDL_Rect select_tile_rectangle = (SDL_Rect) {
+                    .x = relative_position.x-2,
+                    .y = relative_position.y-2,
+                    .w = 68,
+                    .h = 68 
+                };
+                DRAW_RECTANGLE(global, &select_tile_rectangle, colors[BLUE])
+            }
             current_tile.draw_tile_f(global->renderer, current_tile,
-                relative_position, colors[WHITE], (vector2) { tile_size, tile_size });
+                relative_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size });
         }
     }
 
@@ -386,18 +384,18 @@ void render(global_engine_information *global) {
     };
 
     //TODO: Move tile mouse position calculation to update..
-    vector2 tile_mouse_position = (vector2) {
-        .x = tile_size * (tile_rectangle.x / tile_size),
-        .y = tile_size * (tile_rectangle.y / tile_size)
-    };
+    vector2 tile_mouse_position = get_tile_position((vector2) { tile_rectangle.x, tile_rectangle.y }, global_tile_size);
 
-    if(is_colliding(tile_rectangle, map_rectangle)) {
-        vector2 relative_tile_position = sub(tile_mouse_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
+    const vector2 map_position = (vector2) { MAP_POSITION_X, MAP_POSITION_Y };
+    const vector2 map_size = (vector2) { MAP_WIDTH, MAP_HEIGHT };
+
+    if(is_colliding(global->input_handler->cursor.position, (vector2) { 1, 1 }, map_position, map_size)) {
+        vector2 relative_tile_position = sub(tile_mouse_position, map_position);
 
         draw_log_message("x: ", "%lu", (void*)(u_long)relative_tile_position.x,
-            sub(tile_mouse_position, (vector2) { 0, 24 }), old_book_colors[OLD_BLUE], global->font, 8);
+            sub(tile_mouse_position, (vector2) { 0, 24 }), colors[DARK_GRAY], global->font, 8);
         draw_log_message("y: ", "%lu", (void*)(u_long)relative_tile_position.y,
-            sub(tile_mouse_position, (vector2) { 0, 12 }), old_book_colors[OLD_BLUE], global->font, 8);
+            sub(tile_mouse_position, (vector2) { 0, 12 }), colors[DARK_GRAY], global->font, 8);
 
         if(editor_tools[tool_index].tool_action != NULL) {
             editor_tools[tool_index].tool_action(global, tile_mouse_position);
@@ -425,7 +423,7 @@ int main() {
     initializte_global_font(engine_default_global.font,
         (vector2) {
             .x = 0,
-            .y = 0
+            .y = 11 
         }, FONT_SYMBOLS, 16);
 
     start_engine(&engine);

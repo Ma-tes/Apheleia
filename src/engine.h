@@ -59,7 +59,7 @@ typedef struct engine_state {
     update_function update_f;
     render_function render_f;
 
-    int last_framerate_ticks;
+    Uint32 last_framerate_ticks;
     u_long current_performance_counter;
     u_long last_performance_counter;
 
@@ -126,11 +126,12 @@ static void execute_update_callback(engine_state *state) {
     state->last_performance_counter = state->current_performance_counter;
     state->current_performance_counter = SDL_GetPerformanceCounter();
 
-    double delta_time = (double)(state->current_performance_counter - state->last_performance_counter) / (double)SDL_GetPerformanceFrequency() * 100;
+    //TODO: Recondiser use of proper double precision floating value.
+    float delta_time = (float)((state->current_performance_counter - state->last_performance_counter) / (double)SDL_GetPerformanceFrequency() * 100);
     state->update_f(state->global_information, delta_time);
 
-    int framerate_ticks_difference = (SDL_GetTicks() - state->last_framerate_ticks);
-    const int limitation_delta = (1000 / state->global_information->framerate_limit);
+    Uint32 framerate_ticks_difference = (SDL_GetTicks() - ((Uint32)state->last_framerate_ticks));
+    const Uint32 limitation_delta = (1000 / state->global_information->framerate_limit);
 
     if(limitation_delta > framerate_ticks_difference) {
         SDL_Delay(limitation_delta - framerate_ticks_difference);

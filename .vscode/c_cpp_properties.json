@@ -1,0 +1,23 @@
+{
+  "configurations": [
+    {
+      "name": "macos-clang-arm64",
+      "includePath": [
+        "${workspaceFolder}/**"
+      ],
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "${default}",
+      "cppStandard": "${default}",
+      "intelliSenseMode": "macos-clang-arm64",
+      "compilerArgs": [
+        "-g0",
+        "${file}",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lSDL2",
+        "-o"
+      ]
+    }
+  ],
+  "version": 4
+}

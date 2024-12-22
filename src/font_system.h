@@ -20,13 +20,13 @@ typedef struct font_information {
     tile_information *font_tiles;
     SDL_Renderer *renderer;
 
-    int tile_count;
+    size_t tile_count;
     char *font_pattern;
 } font_information;
 
 void set_pattern_font_tiles(font_information *font, vector2 start_font_index, const int max_line_characters_count) {
     char *font_pattern = font->font_pattern;
-    for (int i = 0; i < font->tile_count; i++)
+    for (int i = 0; i < (int)font->tile_count; i++)
     {
         char *font_character = (char*)malloc(sizeof(char) * 1); font_character[0] = font_pattern[i];
 
@@ -44,7 +44,7 @@ void set_pattern_font_tiles(font_information *font, vector2 start_font_index, co
 }
 
 void initializte_global_font(font_information *font, vector2 start_font_index, char *pattern, const int max_line_characters_count) {
-    int count = strlen(pattern);
+    size_t count = strlen(pattern);
     tile_information *tiles = (tile_information*)malloc(sizeof(tile_information) * count);
     
     font->font_tiles = tiles;
@@ -57,7 +57,7 @@ void initializte_global_font(font_information *font, vector2 start_font_index, c
 //TODO: Create option to make global value,
 //which has to definied.
 void draw_char(const char character, vector2 position, color current_color, font_information *font, int size) {
-    for (int i = 0; i < font->tile_count; i++)
+    for (int i = 0; i < (int)font->tile_count; i++)
     {
         tile_information current_tile = font->font_tiles[i];
         if(current_tile.name[0] == character) {
@@ -69,7 +69,7 @@ void draw_char(const char character, vector2 position, color current_color, font
 }
 
 void draw_text(const char* text, vector2 position, color current_color, font_information *font, int size) {
-    int characters_count = strlen(text);
+    int characters_count = (int)strlen(text);
     int line_position_y = 0;
 
     int padding_index = 0;
@@ -88,12 +88,12 @@ void draw_text(const char* text, vector2 position, color current_color, font_inf
     }
 }
 
-void draw_log_message(const char *text, const char *format, void* data, vector2 position, color current_color, font_information *font, int size) {
+void draw_log_message(const char *text, const char *format, void* data, vector2 position, color current_color, font_information *font, size_t size) {
     char log_buffer[256];
     sprintf(log_buffer, format, data);
 
-    draw_text(text, position, current_color, font, size);
+    draw_text(text, position, current_color, font, (int)size);
 
     position.x += strlen(text) * size;
-    draw_text(log_buffer, position, current_color, font, size);
+    draw_text(log_buffer, position, current_color, font, (int)size);
 }

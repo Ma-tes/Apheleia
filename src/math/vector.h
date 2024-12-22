@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <stdbool.h>
 
 #define ZERO_VECTOR2        \
     (vector2) {             \
@@ -55,4 +56,9 @@ vector2 div_vector(const vector2 vector_one, const vector2 vector_two) {
         .x = vector_one.x / vector_two.x,
         .y = vector_one.y / vector_two.y
     };
+}
+
+bool equal(vector2 first_vector, vector2 second_vector) {
+    return first_vector.x == second_vector.x &&
+        first_vector.y == second_vector.y;
 }

@@ -134,7 +134,7 @@ void render(global_engine_information *global) {
     draw_log_message("x: ", "%lu", (void*)position_x,
         log_message_x_position, colors[WHITE], global->font, 8);
 
-    vector2 log_message_y_position = sub(*sprite_position, (vector2) { -8, 16});
+    vector2 log_message_y_position = sub(*sprite_position, (vector2) { -8, 16 });
     draw_log_message("y: ", "%lu", (void*)position_y,
         log_message_y_position, colors[WHITE], global->font, 8);
 }

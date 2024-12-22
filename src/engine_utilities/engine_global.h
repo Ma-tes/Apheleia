@@ -13,7 +13,7 @@
 //Default engine value representing maximum
 //count of component handlers.
 #if !defined(MAX_COMPONENT_HANDLER)
-    #define MAX_COMPONENT_HANDLER 1 
+    #define MAX_COMPONENT_HANDLER 1
 #endif
 
 //Struct declaration created for external typedef function: `component_draw_f`.

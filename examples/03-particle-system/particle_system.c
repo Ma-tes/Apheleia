@@ -109,8 +109,20 @@ static particle test_particle = (particle) {
     .velocity = 20,
     .entity = (entity) {
         .position = (vector2){ 50, 50 },
-        .size = (vector2){ 64, 64 }
+        .size = (vector2){ 12, 12 }
     }
+};
+
+static particle_information test_particle_event = (particle_information) {
+    .life_span = 5,
+    .range = 120,
+
+    .origin_velocity = 20,
+    .origin_entity = (entity) {
+        .position = (vector2){ 50, 50 },
+        .size = (vector2){ 12, 12 }
+    },
+    .particle_count = 100,
 };
 
 void initialize_particles(particle_information *information) {

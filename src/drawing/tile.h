@@ -49,8 +49,8 @@ tile_information *get_first_tile_by_type(int type) {
 
 void draw_tile(SDL_Renderer *renderer, const tile_information tile,
         vector2 position, color tile_color, vector2 size) {
-    int max_texture_x_index = CURRENT_TEXTURE_ATLAS.size.x / CURRENT_TEXTURE_ATLAS.tile_offset_size.x;
-    int max_texture_y_index = CURRENT_TEXTURE_ATLAS.size.y / CURRENT_TEXTURE_ATLAS.tile_offset_size.y;
+    int max_texture_x_index = (int)(CURRENT_TEXTURE_ATLAS.size.x / CURRENT_TEXTURE_ATLAS.tile_offset_size.x);
+    int max_texture_y_index = (int)(CURRENT_TEXTURE_ATLAS.size.y / CURRENT_TEXTURE_ATLAS.tile_offset_size.y);
 
     if(tile.index_position.x > max_texture_x_index || tile.index_position.x < 0 ||
         tile.index_position.y > max_texture_y_index || tile.index_position.y < 0) {

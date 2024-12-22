@@ -26,6 +26,30 @@
                 "isDefault": true
             },
             "detail": "Debugger"
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: gcc sestavit aktivní soubor",
+            "command": "/usr/bin/gcc",
+            "args": [
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g0",
+                "${file}",
+                "-I/opt/homebrew/include",
+                "-L/opt/homebrew/lib",
+                "-lSDL2",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "Úloha vygenerovaná ladicím programem"
         }
     ],
     "version": "2.0.0"

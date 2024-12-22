@@ -80,4 +80,4 @@ static enum mouse_key_state get_mouse_key_state(const SDL_Event event) {
         case SDL_BUTTON_MIDDLE: return M_BUTTON;
     }
     return NONE;
-};
+}

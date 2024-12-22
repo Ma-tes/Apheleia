@@ -39,17 +39,17 @@ static int current_texture_index = 0;
 
 void render_texture_target(SDL_Renderer *renderer, vector2 tile_position, vector2 position, vector2 size) {
     SDL_Rect texture_area = {
-        .x = tile_position.x,
-        .y = tile_position.y,
-        .w = CURRENT_TEXTURE_ATLAS.tile_offset_size.x,
-        .h = CURRENT_TEXTURE_ATLAS.tile_offset_size.y
+        .x = (int)tile_position.x,
+        .y = (int)tile_position.y,
+        .w = (int)CURRENT_TEXTURE_ATLAS.tile_offset_size.x,
+        .h = (int)CURRENT_TEXTURE_ATLAS.tile_offset_size.y
     };
 
     SDL_Rect destination_texture_area = {
-        .x = position.x,
-        .y = position.y,
-        .w = size.x,
-        .h = size.y
+        .x = (int)position.x,
+        .y = (int)position.y,
+        .w = (int)size.x,
+        .h = (int)size.y
     };
 
     SDL_RenderCopy(renderer, CURRENT_TEXTURE_ATLAS.texture, &texture_area, &destination_texture_area);

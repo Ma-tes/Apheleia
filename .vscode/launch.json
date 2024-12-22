@@ -1,7 +1,34 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": []
+  "configurations": [
+    {
+      "name": "C/C++: gcc sestavit a ladit aktivní soubor",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${fileDirname}/${fileBasenameNoExtension}",
+      "args": [
+        "-g0",
+        "${file}",
+        "-I/opt/homebrew/include",
+        "-L/opt/homebrew/lib",
+        "-lSDL2",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "C/C++: gcc sestavit aktivní soubor"
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/Apheleia-fluffy",
+      "program": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/Apheleia-fluffy/build/Debug/outDebug"
+    }
+  ],
+  "version": "2.0.0"
 }

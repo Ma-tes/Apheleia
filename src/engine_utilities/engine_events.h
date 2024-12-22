@@ -40,11 +40,11 @@ void input_event(struct global_engine_information *global_information) {
              * SDL_BUTTON_RIGHT: R_BUTTON;
              * SDL_BUTTON_MIDDLE: M_BUTTON;
             **/
-            int relative_key_code =  key_code > SDL_NUM_SCANCODES ? get_mouse_key_state(event) : key_code;
+            int relative_key_code =  key_code > SDL_NUM_SCANCODES ? (int)get_mouse_key_state(event) : (int)key_code;
             int relative_key_state = (event.type == SDL_KEYDOWN || event.type == SDL_MOUSEBUTTONDOWN) ? KEY_PRESSED : KEY_UP;
 
-            if(relative_key_state != global_information->input_handler->buttons[relative_key_code].key_state) {
-                global_information->input_handler->buttons[relative_key_code].key_state = relative_key_state;
+            if(relative_key_state != (int)global_information->input_handler->buttons[relative_key_code].key_state) {
+                global_information->input_handler->buttons[relative_key_code].key_state = (enum input_key_state)relative_key_state;
                 global_information->input_handler->buttons[relative_key_code].is_key_pressed = relative_key_state;
 
                 last_key_code = relative_key_code;

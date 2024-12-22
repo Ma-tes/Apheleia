@@ -17,9 +17,9 @@ enum color_types {
 };
 
 typedef struct color {
-    int8_t r;
-    int8_t g;
-    int8_t b;
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
 } color;
 
 static color colors[COLORS_COUNT] = {
