@@ -61,7 +61,7 @@ void draw_char(const char character, vector2 position, color current_color, font
     {
         tile_information current_tile = font->font_tiles[i];
         if(current_tile.name[0] == character) {
-            draw_tile(font->renderer, current_tile, position, current_color, (vector2) { size, size });
+            draw_tile(font->renderer, current_tile, position, current_color, (vector2) { size, size }, NULL);
             return;
         }
     }

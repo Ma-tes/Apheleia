@@ -43,7 +43,7 @@
 **/
 #define FONT_SYMBOLS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.+-*/=()[]{}?!:;%%"
 
-#define TEST_TEXTURE_PATH "../../../bin/test_sprites_2.0.bmp"
+#define TEST_TEXTURE_PATH "../../../bin/test_sprites_3.0.bmp"
 
 /**
  * Color representation of font atlas key color, for creating transparent tiles.
@@ -196,14 +196,14 @@ void set_position_tile(const vector2 tile_position, const vector2 tile_size, til
 void paint_tool_action(global_engine_information *global, vector2 mouse_position) {
     vector2 relative_tile_position = sub(mouse_position, (vector2) { MAP_POSITION_X, MAP_POSITION_Y });
     tile_informations[current_tile_index].draw_tile_f(global->renderer, tile_informations[current_tile_index],
-        mouse_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size });
+        mouse_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size }, NULL);
 
     int tile_index = index_of_map_tile(map_tiles, map_tile_index, relative_tile_position);
     if(tile_index != -1 && map_tiles[tile_index].tile.draw_tile_f != NULL &&
         map_tiles[tile_index].tile.type == COLLISION_TILE) {
 
         map_tiles[tile_index].tile.draw_tile_f(global->renderer, map_tiles[tile_index].tile,
-            mouse_position, colors[BLUE], (vector2) { global_tile_size, global_tile_size });
+            mouse_position, colors[BLUE], (vector2) { global_tile_size, global_tile_size }, NULL);
     }
 
    bool is_tile_same = map_tiles[tile_index].tile.identificator == tile_informations[current_tile_index].identificator;
@@ -231,7 +231,7 @@ void remove_tool_action(global_engine_information *global, vector2 mouse_positio
 
     if(tile_index != -1 && map_tiles[tile_index].tile.draw_tile_f != NULL) {
         map_tiles[tile_index].tile.draw_tile_f(global->renderer, map_tiles[tile_index].tile,
-            mouse_position, colors[RED], map_tiles[tile_index].size);
+            mouse_position, colors[RED], map_tiles[tile_index].size, NULL);
 
         if(is_tile_place) {
             remove_block_indexes[remove_block_count++] = tile_index;
@@ -341,7 +341,7 @@ void render(global_engine_information *global) {
         }
 
         tile_informations[i].draw_tile_f(global->renderer, tile_informations[i],
-            tile_position, colors[WHITE], (vector2) { 32, 32 });
+            tile_position, colors[WHITE], (vector2) { 32, 32 }, NULL);
     }
 
     for (int i = 0; i < TOOL_COUNT; i++)
@@ -371,7 +371,7 @@ void render(global_engine_information *global) {
                 DRAW_RECTANGLE(global, &select_tile_rectangle, colors[BLUE])
             }
             current_tile.draw_tile_f(global->renderer, current_tile,
-                relative_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size });
+                relative_position, colors[WHITE], (vector2) { global_tile_size, global_tile_size }, NULL);
         }
     }
 

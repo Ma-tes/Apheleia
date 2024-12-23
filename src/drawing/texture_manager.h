@@ -55,6 +55,26 @@ void render_texture_target(SDL_Renderer *renderer, vector2 tile_position, vector
     SDL_RenderCopy(renderer, CURRENT_TEXTURE_ATLAS.texture, &texture_area, &destination_texture_area);
 }
 
+void render_texture_target_ex(SDL_Renderer *renderer, vector2 tile_position,
+    vector2 position, vector2 size, const double angle, const SDL_RendererFlip flip) {
+    SDL_Rect texture_area = {
+        .x = (int)tile_position.x,
+        .y = (int)tile_position.y,
+        .w = (int)CURRENT_TEXTURE_ATLAS.tile_offset_size.x,
+        .h = (int)CURRENT_TEXTURE_ATLAS.tile_offset_size.y
+    };
+
+    SDL_Rect destination_texture_area = {
+        .x = (int)position.x,
+        .y = (int)position.y,
+        .w = (int)size.x,
+        .h = (int)size.y
+    };
+
+    SDL_RenderCopyEx(renderer, CURRENT_TEXTURE_ATLAS.texture, &texture_area, &destination_texture_area,
+        angle, NULL, flip);
+}
+
 SDL_Texture* create_texture(const char* path, enum image_file_type type, SDL_Renderer *renderer,
         const color transparent_key_color) {
     SDL_RWops *rwops = SDL_RWFromFile(path, "rb");

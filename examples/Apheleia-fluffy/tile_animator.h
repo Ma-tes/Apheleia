@@ -25,27 +25,28 @@ typedef struct animation_atlas {
     Uint32 last_draw_time;
 } animation_atlas;
 
-typedef void(*animation_function)(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size);
+typedef void(*animation_function)(animation_atlas *atlas, SDL_Renderer *renderer,
+    const vector2 draw_position, const vector2 size, tile_external_information *external);
 
-void run_fire_forget_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size) {
+void run_fire_forget_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size, tile_external_information *external) {
     tile_information texture_tile = atlas->textures[atlas->texture_index];
 
-    texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size);
+    texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size, external);
 
     if((atlas->texture_index + 1) != atlas->textures_count) {
         atlas->texture_index++;
     }
 }
 
-void run_repeat_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size) {
+void run_repeat_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size, tile_external_information *external) {
     tile_information texture_tile = atlas->textures[atlas->texture_index];
 
-    texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size);
+    texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size, external);
 
     atlas->texture_index = (atlas->texture_index + 1) % atlas->textures_count;
 }
 
-void run_bounce_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size) {
+void run_bounce_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size, tile_external_information *external) {
 }
 
 static animation_function animation_types_f[3] = {
@@ -59,7 +60,7 @@ int64_t get_time_milliseconds() {
     return ((int64_t)(current_time.tv_sec) * 1000) / ((current_time.tv_usec) * 1000);
 }
 
-void run_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size) {
+void run_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2 draw_position, const vector2 size, tile_external_information *external) {
     //Gets relative animation type function
     animation_function current_animation_type_f = animation_types_f[atlas->type];
 
@@ -70,12 +71,12 @@ void run_animation(animation_atlas *atlas, SDL_Renderer *renderer, const vector2
 
     //Calls animation type function, if key frames has to draw
     if(draw_time_difference >= atlas->key_frame_speed) {
-        current_animation_type_f(atlas, renderer, draw_position, size);
+        current_animation_type_f(atlas, renderer, draw_position, size, external);
         atlas->last_draw_time = current_time;
     }
     else {
         tile_information texture_tile = atlas->textures[atlas->texture_index];
-        texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size);
+        texture_tile.draw_tile_f(renderer, texture_tile, draw_position, atlas->color, size, external);
     }
 }
 

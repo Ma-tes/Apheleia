@@ -58,6 +58,13 @@ vector2 div_vector(const vector2 vector_one, const vector2 vector_two) {
     };
 }
 
+double distance(const vector2 vector_one, const vector2 vector_two) {
+    float difference_x = vector_one.x - vector_two.x;
+    float difference_y = vector_one.y - vector_two.y;
+
+    return sqrt((difference_y * difference_y) + (difference_x * difference_x));
+}
+
 bool equal(vector2 first_vector, vector2 second_vector) {
     return first_vector.x == second_vector.x &&
         first_vector.y == second_vector.y;
