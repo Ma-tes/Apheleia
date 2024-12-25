@@ -20,6 +20,7 @@
 
 #include <SDL2/SDL.h>
 #include <math.h>
+#include <time.h>
 #include "../../src/drawing/tile.h"
 #include "../../src/drawing/color.h"
 #include "../../src/engine_utilities/engine_global.h"
@@ -27,6 +28,8 @@
 #include "../../src/font_system.h"
 #include "apheleia_fluffy_global.h"
 #include "entity.h"
+#include "world_light.h"
+#include "world_light_actions.h"
 #include "tile_animator.h"
 #include "map_editor/map.h"
 #include "utilities/tile_helper.h"
@@ -92,7 +95,6 @@
         interactive_entity.direction = animation_direction;                                           \
     }                                                                                                 \
 
-
 /**
  * Global extern initialization of manualy created tiles.
 **/
@@ -110,6 +112,7 @@ tile_information tile_informations[TILE_COUNT] = {
  * Initialized infromations about tiles from loaded map.
 **/
 map_information map_tiles_information;
+
 
 typedef struct direction_frames {
     tile_information animation_frames[4];
@@ -200,15 +203,26 @@ static tile_information shoot_frames[11] = {
     INDEXED_ANIMATION_TILE(10, 16),
 };
 
+static tile_information top_shoot_frames[11] = {
+    INDEXED_ANIMATION_TILE(0, 17),
+    INDEXED_ANIMATION_TILE(1, 17),
+    INDEXED_ANIMATION_TILE(2, 17),
+    INDEXED_ANIMATION_TILE(3, 17),
+    INDEXED_ANIMATION_TILE(4, 17),
+    INDEXED_ANIMATION_TILE(5, 17),
+    INDEXED_ANIMATION_TILE(6, 17),
+    INDEXED_ANIMATION_TILE(7, 17),
+    INDEXED_ANIMATION_TILE(8, 17),
+    INDEXED_ANIMATION_TILE(9, 17),
+    INDEXED_ANIMATION_TILE(10, 17),
+};
+
 static tile_information bullet_tile = INDEXED_ANIMATION_TILE(0, 10);
 
 struct bullet {
     float velocity;
-    vector2 position;
-    enum direction direction;
-
-    tile_information tile;
-} bullets[1024];
+    interactive_entity bullet_interactive_entity;
+} *bullets;
 
 static int bullets_count = 0;
 
@@ -233,7 +247,7 @@ entity weapon = (entity) {
 };
 
 vector2 last_player_position = (vector2) { 64, 64 };
-interactive_entity player = (interactive_entity) {
+static interactive_entity player = (interactive_entity) {
     .entity = (entity) {
         .position = (vector2) { 64, 64 },
         .size = (vector2) { 48, 48 },
@@ -245,13 +259,27 @@ interactive_entity player = (interactive_entity) {
     .is_entity_idle = false
 };
 
-static int collision_range = 16;
-static int collision_offset = 64;
-static int collision_precision = 64;
+enum { BULLETS, PLAYER };
+light_state default_light_states[WORLD_LIGHT_ACTIONS_COUNT] = {
+    [BULLETS] = (light_state) {
+        .configuration = &(lighting_configuration) {
+            .range = 4,
+            .offset = 2,
+            .precision = 4 
+        },
+        .tag = MULTIPLE_VOID,
+        .action = bullet_lighting_action
+    },
+    [PLAYER] = (light_state) {
+        .tag = SINGLE,
+        .action = player_lighting_action
+    }
+};
 
-static int ligthing_range = 32;
-static int ligthing_offset = 128;
-static int ligthing_precision = 64;
+entity get_bullet_entity(void *data) {
+    struct bullet *relative_bullet = (struct bullet*)data;
+    return relative_bullet->bullet_interactive_entity.entity;
+};
 
 void initialization(global_engine_information *global) {
     /**
@@ -277,8 +305,23 @@ void initialization(global_engine_information *global) {
     **/
     map_tiles_information = load_map_tiles("map_editor/test.bin");
 
+
+    default_light_states[PLAYER].position_entity = &(player.entity);
+    default_light_states[PLAYER].configuration = &player_lighting_configuration;
+
+    bullets = malloc(sizeof(struct bullet) * 1024);
+
+    default_light_states[BULLETS].anonymous_entities = malloc(sizeof(void*) * 1024);
+    default_light_states[BULLETS].get_entity = &get_bullet_entity;
+
     shoot_animation_configuration.textures = shoot_frames;
     shoot_animation_configuration.textures_count = 11;
+
+    game_state = malloc(sizeof(game_state_information));
+    game_state->game_time = 120;
+    game_state->round_time = 10;
+
+    start_time = time(NULL);
 }
 
 void update(global_engine_information *global, float delta_time) {
@@ -291,19 +334,27 @@ void update(global_engine_information *global, float delta_time) {
 
     if(keyboard_state[SDL_SCANCODE_W]) {
         EXECUTE_DIRECTION_ANIMATION(player, NORTH, player_animation_configuration, running_frames)
+
         player.entity.position.y -= 1.25 * delta_time;
+        shoot_animation_configuration.textures = top_shoot_frames;
     }
     if(keyboard_state[SDL_SCANCODE_S]) {
         EXECUTE_DIRECTION_ANIMATION(player, SOUTH, player_animation_configuration, running_frames)
+
         player.entity.position.y += 1.25 * delta_time;
+        shoot_animation_configuration.textures = top_shoot_frames;
     }
     if(keyboard_state[SDL_SCANCODE_A]) {
         EXECUTE_DIRECTION_ANIMATION(player, WEST, player_animation_configuration, running_frames)
+
         player.entity.position.x -= 1.25 * delta_time;
+        shoot_animation_configuration.textures = shoot_frames;
     }
     if(keyboard_state[SDL_SCANCODE_D]) {
         EXECUTE_DIRECTION_ANIMATION(player, EAST, player_animation_configuration, running_frames)
+
         player.entity.position.x += 1.25 * delta_time;
+        shoot_animation_configuration.textures = shoot_frames;
     }
 
     if((player.entity.position.x != last_player_position.x || 
@@ -312,10 +363,10 @@ void update(global_engine_information *global, float delta_time) {
     }
 
     vector2 last_bullet_distance = (vector2) {
-        .x = abs(bullets[bullets_count - 1].position.x - player.entity.position.x),
-        .y = abs(bullets[bullets_count - 1].position.y - player.entity.position.y)
+        .x = abs(bullets[bullets_count - 1].bullet_interactive_entity.entity.position.x - player.entity.position.x),
+        .y = abs(bullets[bullets_count - 1].bullet_interactive_entity.entity.position.y - player.entity.position.y)
     };
-    last_bullet_distance = mul(last_bullet_distance, directions[bullets[bullets_count - 1].direction]);
+    last_bullet_distance = mul(last_bullet_distance, directions[bullets[bullets_count - 1].bullet_interactive_entity.direction]);
 
     if(keyboard_state[SDL_SCANCODE_SPACE] && (bullets_count == 0 ||
         (abs(last_bullet_distance.x) > 200 || abs(last_bullet_distance.y) > 200))) {
@@ -328,10 +379,21 @@ void update(global_engine_information *global, float delta_time) {
         bullet_position = add(bullet_position, mul_value(direction_index, 18 + (abs(directions[player.direction].y) * 16)));
 
         bullets[bullets_count++] = (struct bullet) {
-            .position = bullet_position,
-            .direction = player.direction,
-            .tile = bullet_tile
+            .bullet_interactive_entity = (interactive_entity) {
+                .entity = (entity) {
+                    .position = bullet_position,
+                    .collision_box_size = (vector2) { 18, 18 },
+                    .size = (vector2) { 16, 16 },
+                    .texture = &bullet_tile
+                },
+                .direction = player.direction,
+                .is_entity_idle = false
+            },
         };
+
+        default_light_states[BULLETS].anonymous_entities[default_light_states[BULLETS].count] =
+            &(bullets[default_light_states[BULLETS].count]);
+        default_light_states[BULLETS].count++;
     }
 
     //Used only for debug purposes
@@ -341,50 +403,47 @@ void update(global_engine_information *global, float delta_time) {
     if(keyboard_state[SDL_SCANCODE_3]) { collision_precision++; }
     if(keyboard_state[SDL_SCANCODE_4]) { collision_precision--; }
 
-    if(keyboard_state[SDL_SCANCODE_5]) { ligthing_offset++; }
-    if(keyboard_state[SDL_SCANCODE_6]) { ligthing_offset--; }
+    if(keyboard_state[SDL_SCANCODE_5]) { player_lighting_configuration.offset++; }
+    if(keyboard_state[SDL_SCANCODE_6]) { player_lighting_configuration.offset--; }
 
-    if(keyboard_state[SDL_SCANCODE_7]) { ligthing_precision++; }
-    if(keyboard_state[SDL_SCANCODE_8]) { ligthing_precision--; }
+    if(keyboard_state[SDL_SCANCODE_7]) { player_lighting_configuration.precision++; }
+    if(keyboard_state[SDL_SCANCODE_8]) { player_lighting_configuration.precision--; }
 
     for (int i = 0; i < bullets_count; i++)
     {
         bullets[i].velocity = bullets[i].velocity < 5.0f ? bullets[i].velocity + 0.8f : bullets[i].velocity + 0.0f;
-        bullets[i].position = add(bullets[i].position, mul_value(directions[bullets[i].direction], bullets[i].velocity * delta_time));
+        bullets[i].bullet_interactive_entity.entity.position = add(bullets[i].bullet_interactive_entity.entity.position, mul_value(directions[bullets[i].bullet_interactive_entity.direction], bullets[i].velocity * delta_time));
+    }
+
+    time_t previous_time = current_time;
+    current_time = time(NULL) - start_time;
+
+    game_state->timer_seconds = game_state->game_time - current_time;
+
+    if((current_time - previous_time) == 1 && current_time % game_state->round_time == 0) {
+        game_state->round_phase++;
+        player_lighting_configuration.offset = player_lighting_configuration.offset < 192 ?
+            player_lighting_configuration.offset : player_lighting_configuration.offset - (128 - (game_state->round_phase * 4));
     }
 }
 
 void render(global_engine_information *global) {
-    vector2 *light_tiles = get_detection_positions(player.entity, map_tiles_information,
-        ligthing_range, ligthing_offset, ligthing_precision);
+    set_light_detection_positions(&default_light_states[BULLETS], map_tiles_information);
+    set_light_detection_positions(&default_light_states[PLAYER], map_tiles_information);
 
     for (int i = 0; i < map_tiles_information.count; i++)
     {
         map_tile current_tile = map_tiles_information.tiles[i];
-
         draw_tile(global->renderer, current_tile.tile,
             current_tile.position, colors[WHITE], current_tile.size, NULL);
-        for (int i = 0; i < ligthing_precision; i++)
-        {
-            double player_tile_distance = distance(player.entity.position, current_tile.position);
-            if(player_tile_distance > (ligthing_offset * 2)) {
-                draw_tile(global->renderer, INDEXED_ANIMATION_TILE(3, 10),
-                    current_tile.position, colors[WHITE], current_tile.size, NULL);
-                continue;
-            }
 
-            double tiles_distance = distance(light_tiles[i], current_tile.position);
-            if(player_tile_distance > ligthing_offset && (tiles_distance > 296 && tiles_distance < 512)) {
-                draw_tile(global->renderer, INDEXED_ANIMATION_TILE(2, 10),
-                    current_tile.position, colors[WHITE], current_tile.size, NULL);
-                continue;
-            }
-            if(player_tile_distance > (ligthing_offset / 2) && (tiles_distance > 256 && tiles_distance < 512)) {
-                draw_tile(global->renderer, INDEXED_ANIMATION_TILE(1, 10),
-                    current_tile.position, colors[WHITE], current_tile.size, NULL);
-                continue;
-            }
+        for (int j = 0; j < WORLD_LIGHT_ACTIONS_COUNT; j++)
+        {
+            draw_light_state(global->renderer, &default_light_states[j], current_tile);
         }
+
+        last_active_light_positions = NULL;
+        last_active_light_positions_count = 0;
     }
 
     vector2 *detection_tiles = get_detection_positions(player.entity, map_tiles_information,
@@ -450,16 +509,20 @@ void render(global_engine_information *global) {
 
     for (int i = 0; i < bullets_count; i++)
     {
-        tile_external_information bullet_external = (tile_external_information) { bullets[i].direction * 90, get_relative_texture_flip(player)};
-        bullets[i].tile.draw_tile_f(global->renderer, bullets[i].tile,
-            bullets[i].position, colors[WHITE], (vector2) { 16, 16 }, &bullet_external);
+        tile_external_information bullet_external = (tile_external_information) { bullets[i].bullet_interactive_entity.direction * 90, get_relative_texture_flip(player)};
+
+        draw_tile(global->renderer, *bullets[i].bullet_interactive_entity.entity.texture,
+            bullets[i].bullet_interactive_entity.entity.position, colors[WHITE],
+                bullets[i].bullet_interactive_entity.entity.size, &bullet_external);
     }
 
     weapon.position = add(player.entity.position, mul_value(directions[player.direction], 5));
-    weapon.position = add(weapon.position, (vector2) { player.entity.size.x / 4, 0});
-
+    weapon.position = player.direction == NORTH || player.direction == SOUTH ?
+        add(weapon.position, (vector2) { 4, 0}) :
+        add(weapon.position, (vector2) { player.entity.size.x / 4, 0});
 
     tile_external_information weapon_external = (tile_external_information) { player.direction * 90, get_relative_texture_flip(player)};
+
     run_animation(weapon.atlas, global->renderer, weapon.position, weapon.size, &weapon_external);
 
     if(is_shooting) {
@@ -470,6 +533,12 @@ void render(global_engine_information *global) {
         draw_tile(global->renderer, weapon.atlas->textures[weapon.atlas->texture_index],
             weapon.position, colors[WHITE], weapon.size, &weapon_external);
     }
+
+    draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 12, 10 }, colors[BLUE], global->font, 32);
+    draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 10, 8 }, colors[WHITE], global->font, 32);
+
+    draw_log_message("Phase: ", "%lu", (void*) (game_state->round_phase), (vector2) { 510, 10 }, colors[BLUE], global->font, 32);
+    draw_log_message("Phase: ", "%lu", (void*) (game_state->round_phase), (vector2) { 508, 8 }, colors[WHITE], global->font, 32);
 }
 
 int main() {

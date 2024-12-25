@@ -22,7 +22,7 @@ typedef enum tile_type {
 typedef struct tile_information tile_information;
 typedef struct tile_external_information tile_external_information;
 
-typedef void (*draw_tile_function)(SDL_Renderer *renderer, const tile_information tile, vector2 position, color tile_color, vector2 size, tile_external_information *external);
+typedef void (*draw_tile_function)(SDL_Renderer *renderer, const tile_information tile, vector2 position, color tile_color, vector2 size, const tile_external_information *external);
 
 typedef struct tile_information {
     char *name;

@@ -69,3 +69,13 @@ bool equal(vector2 first_vector, vector2 second_vector) {
     return first_vector.x == second_vector.x &&
         first_vector.y == second_vector.y;
 }
+
+bool contains(vector2 vector, vector2 *vectors, const int count) {
+    for (int i = 0; i < count; i++)
+    {
+        if(equal(vector, vectors[i])) {
+            return true;
+        }
+    }
+    return false;
+}
