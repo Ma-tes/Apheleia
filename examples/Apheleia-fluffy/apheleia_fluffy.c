@@ -15,8 +15,8 @@
 #define TILE_COUNT 1
 #define SDL_CLEAR_COLOR colors[WHITE]
 
-#define POST_PIXEL_PROCESS
-#define POST_PIXEL_PROCESSES_COUNT 1
+//#define POST_PIXEL_PROCESS
+//#define POST_PIXEL_PROCESSES_COUNT 1
 
 #include <SDL2/SDL.h>
 #include <math.h>
@@ -31,6 +31,7 @@
 #include "world_light.h"
 #include "world_light_actions.h"
 #include "tile_animator.h"
+#include "weapon_container.h"
 #include "map_editor/map.h"
 #include "utilities/tile_helper.h"
 #include "utilities/collision.h"
@@ -87,13 +88,13 @@
         rectangle_color.g, rectangle_color.b, 255);                 \
     SDL_RenderDrawRect(global->renderer, rectangle);                \
 
-#define EXECUTE_DIRECTION_ANIMATION(interactive_entity, animation_direction, atlas, frames)           \
-    if(interactive_entity.direction != animation_direction || interactive_entity.is_entity_idle) {    \
-        atlas.textures = frames[animation_direction].animation_frames;                                \
-        atlas.textures_count = frames[animation_direction].frames_limit_count;                        \
-        atlas.texture_index = 0;                                                                      \
-        interactive_entity.direction = animation_direction;                                           \
-    }                                                                                                 \
+#define EXECUTE_DIRECTION_ANIMATION(interactive_entity, animation_direction, atlas, frames)                 \
+    if(interactive_entity.base_direction != animation_direction || interactive_entity.is_entity_idle) {     \
+        atlas.textures = frames[animation_direction].animation_frames;                                      \
+        atlas.textures_count = frames[animation_direction].frames_limit_count;                              \
+        atlas.texture_index = 0;                                                                            \
+        interactive_entity.base_direction = animation_direction;                                            \
+    }                                                                                                       \
 
 /**
  * Global extern initialization of manualy created tiles.
@@ -189,43 +190,6 @@ static direction_frames running_frames[4] = {
     },
 };
 
-static tile_information shoot_frames[11] = {
-    INDEXED_ANIMATION_TILE(0, 16),
-    INDEXED_ANIMATION_TILE(1, 16),
-    INDEXED_ANIMATION_TILE(2, 16),
-    INDEXED_ANIMATION_TILE(3, 16),
-    INDEXED_ANIMATION_TILE(4, 16),
-    INDEXED_ANIMATION_TILE(5, 16),
-    INDEXED_ANIMATION_TILE(6, 16),
-    INDEXED_ANIMATION_TILE(7, 16),
-    INDEXED_ANIMATION_TILE(8, 16),
-    INDEXED_ANIMATION_TILE(9, 16),
-    INDEXED_ANIMATION_TILE(10, 16),
-};
-
-static tile_information top_shoot_frames[11] = {
-    INDEXED_ANIMATION_TILE(0, 17),
-    INDEXED_ANIMATION_TILE(1, 17),
-    INDEXED_ANIMATION_TILE(2, 17),
-    INDEXED_ANIMATION_TILE(3, 17),
-    INDEXED_ANIMATION_TILE(4, 17),
-    INDEXED_ANIMATION_TILE(5, 17),
-    INDEXED_ANIMATION_TILE(6, 17),
-    INDEXED_ANIMATION_TILE(7, 17),
-    INDEXED_ANIMATION_TILE(8, 17),
-    INDEXED_ANIMATION_TILE(9, 17),
-    INDEXED_ANIMATION_TILE(10, 17),
-};
-
-static tile_information bullet_tile = INDEXED_ANIMATION_TILE(0, 10);
-
-struct bullet {
-    float velocity;
-    interactive_entity bullet_interactive_entity;
-} *bullets;
-
-static int bullets_count = 0;
-
 animation_atlas player_animation_configuration = (animation_atlas) {
     .type = REPEAT,
 
@@ -233,30 +197,22 @@ animation_atlas player_animation_configuration = (animation_atlas) {
     .key_frame_speed = 200
 };
 
-animation_atlas shoot_animation_configuration = (animation_atlas) {
-    .type = FIRE_FORGET,
-
-    .color = (color) { 255, 255, 255 },
-    .key_frame_speed = 50
-};
-
-bool is_shooting = false;
-entity weapon = (entity) {
-    .atlas = &shoot_animation_configuration,
-    .size = (vector2) { 64, 64 },
-};
-
-vector2 last_player_position = (vector2) { 64, 64 };
-static interactive_entity player = (interactive_entity) {
-    .entity = (entity) {
-        .position = (vector2) { 64, 64 },
-        .size = (vector2) { 48, 48 },
-        .collision_box_offset = (vector2) { 8, 0 },
-        .collision_box_size = (vector2) { 32, 48 },
-        .atlas = &player_animation_configuration,
+static player_entity player = (player_entity) {
+    .last_player_position = (vector2) { 64, 64 },
+    .base_interactive_entity = &(interactive_entity_t) {
+        .base_entity = (entity_t) {
+            .position = (vector2) { 64, 64 },
+            .size = (vector2) { 48, 48 },
+            .collision_box_offset = (vector2) { 8, 0 },
+            .collision_box_size = (vector2) { 32, 48 },
+            .atlas = &player_animation_configuration,
+        },
+        .base_direction = SOUTH,
+        .is_entity_idle = false
     },
-    .direction = SOUTH,
-    .is_entity_idle = false
+
+    .current_weapon = &weapons[PISTOL],
+    .is_shooting = false, .is_weapon_changed = true,
 };
 
 enum { BULLETS, PLAYER };
@@ -276,9 +232,9 @@ light_state default_light_states[WORLD_LIGHT_ACTIONS_COUNT] = {
     }
 };
 
-entity get_bullet_entity(void *data) {
+entity_t get_bullet_entity(void *data) {
     struct bullet *relative_bullet = (struct bullet*)data;
-    return relative_bullet->bullet_interactive_entity.entity;
+    return relative_bullet->bullet_interactive_entity.base_entity;
 };
 
 void initialization(global_engine_information *global) {
@@ -306,16 +262,11 @@ void initialization(global_engine_information *global) {
     map_tiles_information = load_map_tiles("map_editor/test.bin");
 
 
-    default_light_states[PLAYER].position_entity = &(player.entity);
+    default_light_states[PLAYER].position_entity = &(player.base_interactive_entity->base_entity);
     default_light_states[PLAYER].configuration = &player_lighting_configuration;
-
-    bullets = malloc(sizeof(struct bullet) * 1024);
 
     default_light_states[BULLETS].anonymous_entities = malloc(sizeof(void*) * 1024);
     default_light_states[BULLETS].get_entity = &get_bullet_entity;
-
-    shoot_animation_configuration.textures = shoot_frames;
-    shoot_animation_configuration.textures_count = 11;
 
     game_state = malloc(sizeof(game_state_information));
     game_state->game_time = 120;
@@ -330,70 +281,44 @@ void update(global_engine_information *global, float delta_time) {
      * any precise movement implementations.
     **/
     const Uint8* keyboard_state = SDL_GetKeyboardState(NULL);
-    last_player_position = player.entity.position;
+    player.last_player_position = player.base_interactive_entity->base_entity.position;
 
     if(keyboard_state[SDL_SCANCODE_W]) {
-        EXECUTE_DIRECTION_ANIMATION(player, NORTH, player_animation_configuration, running_frames)
+        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), NORTH, player_animation_configuration, running_frames)
 
-        player.entity.position.y -= 1.25 * delta_time;
-        shoot_animation_configuration.textures = top_shoot_frames;
+        player.base_interactive_entity->base_entity.position.y -= 1.25 * delta_time;
+        set_weapon_direction_animation(player.current_weapon, NORTH);
     }
     if(keyboard_state[SDL_SCANCODE_S]) {
-        EXECUTE_DIRECTION_ANIMATION(player, SOUTH, player_animation_configuration, running_frames)
+        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), SOUTH, player_animation_configuration, running_frames)
 
-        player.entity.position.y += 1.25 * delta_time;
-        shoot_animation_configuration.textures = top_shoot_frames;
+        player.base_interactive_entity->base_entity.position.y += 1.25 * delta_time;
+        set_weapon_direction_animation(player.current_weapon, SOUTH);
     }
     if(keyboard_state[SDL_SCANCODE_A]) {
-        EXECUTE_DIRECTION_ANIMATION(player, WEST, player_animation_configuration, running_frames)
+        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), WEST, player_animation_configuration, running_frames)
 
-        player.entity.position.x -= 1.25 * delta_time;
-        shoot_animation_configuration.textures = shoot_frames;
+        player.base_interactive_entity->base_entity.position.x -= 1.25 * delta_time;
+        set_weapon_direction_animation(player.current_weapon, WEST);
     }
     if(keyboard_state[SDL_SCANCODE_D]) {
-        EXECUTE_DIRECTION_ANIMATION(player, EAST, player_animation_configuration, running_frames)
+        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), EAST, player_animation_configuration, running_frames)
 
-        player.entity.position.x += 1.25 * delta_time;
-        shoot_animation_configuration.textures = shoot_frames;
+        player.base_interactive_entity->base_entity.position.x += 1.25 * delta_time;
+        set_weapon_direction_animation(player.current_weapon, EAST);
     }
 
-    if((player.entity.position.x != last_player_position.x || 
-        player.entity.position.y != last_player_position.y)) {
-            player.is_entity_idle = false;
+    if((player.base_interactive_entity->base_entity.position.x != player.last_player_position.x || 
+        player.base_interactive_entity->base_entity.position.y != player.last_player_position.y)) {
+            player.base_interactive_entity->is_entity_idle = false;
     }
 
-    vector2 last_bullet_distance = (vector2) {
-        .x = abs(bullets[bullets_count - 1].bullet_interactive_entity.entity.position.x - player.entity.position.x),
-        .y = abs(bullets[bullets_count - 1].bullet_interactive_entity.entity.position.y - player.entity.position.y)
-    };
-    last_bullet_distance = mul(last_bullet_distance, directions[bullets[bullets_count - 1].bullet_interactive_entity.direction]);
-
-    if(keyboard_state[SDL_SCANCODE_SPACE] && (bullets_count == 0 ||
-        (abs(last_bullet_distance.x) > 200 || abs(last_bullet_distance.y) > 200))) {
-
-        is_shooting = true;
-
-        vector2 bullet_position = add(player.entity.position, mul_value(directions[player.direction], 5));
-
-        vector2 direction_index = (vector2) { abs(directions[player.direction].y), abs(directions[player.direction].x) };
-        bullet_position = add(bullet_position, mul_value(direction_index, 18 + (abs(directions[player.direction].y) * 16)));
-
-        bullets[bullets_count++] = (struct bullet) {
-            .bullet_interactive_entity = (interactive_entity) {
-                .entity = (entity) {
-                    .position = bullet_position,
-                    .collision_box_size = (vector2) { 18, 18 },
-                    .size = (vector2) { 16, 16 },
-                    .texture = &bullet_tile
-                },
-                .direction = player.direction,
-                .is_entity_idle = false
-            },
-        };
-
-        default_light_states[BULLETS].anonymous_entities[default_light_states[BULLETS].count] =
-            &(bullets[default_light_states[BULLETS].count]);
-        default_light_states[BULLETS].count++;
+    if(keyboard_state[SDL_SCANCODE_SPACE]) {
+        if(execute_weapon_fire(&player)) {
+            default_light_states[BULLETS].anonymous_entities[default_light_states[BULLETS].count] =
+                &(bullets[default_light_states[BULLETS].count]);
+            default_light_states[BULLETS].count++;
+        }
     }
 
     //Used only for debug purposes
@@ -412,7 +337,7 @@ void update(global_engine_information *global, float delta_time) {
     for (int i = 0; i < bullets_count; i++)
     {
         bullets[i].velocity = bullets[i].velocity < 5.0f ? bullets[i].velocity + 0.8f : bullets[i].velocity + 0.0f;
-        bullets[i].bullet_interactive_entity.entity.position = add(bullets[i].bullet_interactive_entity.entity.position, mul_value(directions[bullets[i].bullet_interactive_entity.direction], bullets[i].velocity * delta_time));
+        bullets[i].bullet_interactive_entity.base_entity.position = add(bullets[i].bullet_interactive_entity.base_entity.position, mul_value(directions[bullets[i].bullet_interactive_entity.base_direction], bullets[i].velocity * delta_time));
     }
 
     time_t previous_time = current_time;
@@ -446,9 +371,9 @@ void render(global_engine_information *global) {
         last_active_light_positions_count = 0;
     }
 
-    vector2 *detection_tiles = get_detection_positions(player.entity, map_tiles_information,
+    vector2 *detection_tiles = get_detection_positions(player.base_interactive_entity->base_entity, map_tiles_information,
         collision_range, collision_offset, collision_precision);
-    map_information collision_map = get_collision_tiles(player.entity, map_tiles_information,
+    map_information collision_map = get_collision_tiles(player.base_interactive_entity->base_entity, map_tiles_information,
         collision_range, collision_offset, collision_precision);
 
     for (int i = 0; i < collision_precision; i++)
@@ -474,65 +399,50 @@ void render(global_engine_information *global) {
         };
         //DRAW_BORDER_RECTANGLE(global, &detection_tile_rectangle, colors[BLUE]);
 
-        if(current_tile.tile.type == COLLISION_TILE && is_colliding(add(player.entity.position, player.entity.collision_box_offset), player.entity.collision_box_size,
+        if(current_tile.tile.type == COLLISION_TILE && is_colliding(add(player.base_interactive_entity->base_entity.position,
+            player.base_interactive_entity->base_entity.collision_box_offset), player.base_interactive_entity->base_entity.collision_box_size,
+
             current_tile.position, current_tile.size)) {
-            player.entity.position = last_player_position;
+            player.base_interactive_entity->base_entity.position = player.last_player_position;
         }
     }
 
     free(detection_tiles);
 
-    u_long position_x = (u_long)player.entity.position.x;
-    u_long position_y = (u_long)player.entity.position.y;
+    u_long position_x = (u_long)player.base_interactive_entity->base_entity.position.x;
+    u_long position_y = (u_long)player.base_interactive_entity->base_entity.position.y;
 
-    vector2 log_message_x_position = sub(player.entity.position, (vector2) { -8, 32 });
+    vector2 log_message_x_position = sub(player.base_interactive_entity->base_entity.position, (vector2) { -8, 32 });
     draw_log_message("x: ", "%lu", (void*)position_x,
         log_message_x_position, colors[BLACK], global->font, 8);
 
-    vector2 log_message_y_position = sub(player.entity.position, (vector2) { -8, 16 });
+    vector2 log_message_y_position = sub(player.base_interactive_entity->base_entity.position, (vector2) { -8, 16 });
     draw_log_message("y: ", "%lu", (void*)position_y,
         log_message_y_position, colors[BLACK], global->font, 8);
 
-    if((player.entity.position.x == last_player_position.x &&
-        player.entity.position.y == last_player_position.y)) {
-            if(!player.is_entity_idle) {
-                player_animation_configuration.textures = idle_frames[player.direction].animation_frames;
-                player_animation_configuration.textures_count = idle_frames[player.direction].frames_limit_count;
+    if((player.base_interactive_entity->base_entity.position.x == player.last_player_position.x &&
+        player.base_interactive_entity->base_entity.position.y == player.last_player_position.y)) {
+            if(!player.base_interactive_entity->is_entity_idle) {
+                player_animation_configuration.textures = idle_frames[player.base_interactive_entity->base_direction].animation_frames;
+                player_animation_configuration.textures_count = idle_frames[player.base_interactive_entity->base_direction].frames_limit_count;
 
                 player_animation_configuration.texture_index = 0;
-                player.is_entity_idle = true;
+                player.base_interactive_entity->is_entity_idle = true;
             }
     }
 
-    run_animation(player.entity.atlas, global->renderer, player.entity.position, player.entity.size, NULL);
-    last_player_position = player.entity.position;
+    run_animation(player.base_interactive_entity->base_entity.atlas, global->renderer, player.base_interactive_entity->base_entity.position, player.base_interactive_entity->base_entity.size, NULL);
+    player.last_player_position = player.base_interactive_entity->base_entity.position;
 
     for (int i = 0; i < bullets_count; i++)
     {
-        tile_external_information bullet_external = (tile_external_information) { bullets[i].bullet_interactive_entity.direction * 90, get_relative_texture_flip(player)};
+        tile_external_information bullet_external = (tile_external_information) { bullets[i].bullet_interactive_entity.base_direction * 90, get_relative_texture_flip(*player.base_interactive_entity)};
 
-        draw_tile(global->renderer, *bullets[i].bullet_interactive_entity.entity.texture,
-            bullets[i].bullet_interactive_entity.entity.position, colors[WHITE],
-                bullets[i].bullet_interactive_entity.entity.size, &bullet_external);
+        draw_tile(global->renderer, *bullets[i].bullet_interactive_entity.base_entity.texture,
+            bullets[i].bullet_interactive_entity.base_entity.position, colors[WHITE],
+                bullets[i].bullet_interactive_entity.base_entity.size, &bullet_external);
     }
-
-    weapon.position = add(player.entity.position, mul_value(directions[player.direction], 5));
-    weapon.position = player.direction == NORTH || player.direction == SOUTH ?
-        add(weapon.position, (vector2) { 4, 0}) :
-        add(weapon.position, (vector2) { player.entity.size.x / 4, 0});
-
-    tile_external_information weapon_external = (tile_external_information) { player.direction * 90, get_relative_texture_flip(player)};
-
-    run_animation(weapon.atlas, global->renderer, weapon.position, weapon.size, &weapon_external);
-
-    if(is_shooting) {
-        weapon.atlas->texture_index = 0;
-        is_shooting = false;
-    }
-    else {
-        draw_tile(global->renderer, weapon.atlas->textures[weapon.atlas->texture_index],
-            weapon.position, colors[WHITE], weapon.size, &weapon_external);
-    }
+    draw_linked_weapon(global->renderer, &player);
 
     draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 12, 10 }, colors[BLUE], global->font, 32);
     draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 10, 8 }, colors[WHITE], global->font, 32);

@@ -1,9 +1,13 @@
 #pragma once
 
+#include <stdbool.h>
 #include <time.h>
 #include "../../src/engine_utilities/engine_global.h"
 #include "../../src/engine.h"
+#include "../../src/drawing/tile.h"
+#include "entity.h"
 #include "world_light.h"
+
 
 static time_t start_time;
 static time_t current_time;

@@ -8,9 +8,9 @@
 #include "../../src/drawing/color.h"
 #include "../../src/engine_utilities/engine_global.h"
 #include "../../src/engine.h"
-#include "entity.h"
 #include "utilities/tile_helper.h"
 #include "utilities/collision.h"
+#include "entity.h"
 
 #define WORLD_LIGHT_ACTIONS_COUNT 2
 
@@ -36,14 +36,14 @@ typedef struct light_state {
             //TODO: Change interactive_entity to default entity type
             void **anonymous_entities;
 
-            entity(*get_entity)(void *data);
+            entity_t(*get_entity)(void *data);
 
             vector2 **lights_detection_positions;
             size_t count;
         };
 
         struct {
-            entity *position_entity;
+            entity_t *position_entity;
             vector2 *light_detection_positions;
         };
     };
@@ -71,7 +71,7 @@ void set_light_detection_positions(light_state *state, map_information map) {
     state->lights_detection_positions = (vector2**)malloc(sizeof(vector2*) * state->count);
     for (int i = 0; i < state->count; i++)
     {
-        entity current_entity = state->get_entity(state->anonymous_entities[i]);
+        entity_t current_entity = state->get_entity(state->anonymous_entities[i]);
         vector2 *single_light_tiles = get_detection_positions(current_entity, map,
             state->configuration->range,
             state->configuration->offset,
@@ -92,7 +92,7 @@ void draw_light_state(SDL_Renderer *renderer, light_state *state, map_tile tile)
 
     for (int i = 0; i < state->count; i++)
     {
-        entity current_entity = state->get_entity(state->anonymous_entities[i]);
+        entity_t current_entity = state->get_entity(state->anonymous_entities[i]);
         state->action(renderer,
             current_entity.position,
             state->lights_detection_positions[i],
