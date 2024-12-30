@@ -2,7 +2,8 @@
 
 #include "../map_editor/map.h"
 #include "../../../src/math/vector.h"
-#include "../entity.h"
+
+typedef struct entity entity_t;
 
 vector2 get_tile_position(vector2 position, int tile_size) {
     return (vector2) {
@@ -22,7 +23,7 @@ int index_of_map_tile(map_tile *map_tiles, int count, const vector2 tile_positio
     return -1;
 }
 
-vector2 *get_detection_positions(entity_t object, map_information map,
+vector2 *get_detection_positions(vector2 object_position, vector2 object_size, map_information map,
     const int range, const int offset, const int precision) {
 
     vector2 *detection_tiles = malloc(sizeof(vector2) * precision);
@@ -30,8 +31,8 @@ vector2 *get_detection_positions(entity_t object, map_information map,
     {
 
         vector2 circle_value_position = {
-            .x = cos(range * i) * (offset) + (object.position.x + (object.size.x / 2)),
-            .y = sin(range * i) * (offset) + (object.position.y + (object.size.y / 2))
+            .x = cos(range * i) * (offset) + (object_position.x + (object_size.x / 2)),
+            .y = sin(range * i) * (offset) + (object_position.y + (object_size.y / 2))
         };
 
         vector2 circle_tile_position = get_tile_position(circle_value_position, 64);
@@ -40,13 +41,13 @@ vector2 *get_detection_positions(entity_t object, map_information map,
     return detection_tiles;
 }
 
-map_information get_collision_tiles(entity_t object, map_information map,
+map_information get_collision_tiles(vector2 object_position, vector2 object_size, map_information map,
         const int range, const int offset, const int precision) {
 
     map_tile *collision_tiles = malloc(sizeof(map_tile) * precision);
     int tile_index = 0;
 
-    vector2 *object_detect_tiles = get_detection_positions(object, map, range, offset, precision);
+    vector2 *object_detect_tiles = get_detection_positions(object_position, object_size, map, range, offset, precision);
     for (int i = 0; i < precision; i++)
     {
         int current_index = index_of_map_tile(map.tiles, map.count, object_detect_tiles[i]);

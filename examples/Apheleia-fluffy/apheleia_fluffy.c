@@ -13,7 +13,10 @@
  * 7. #define MAX_TEXTURES 4
 **/
 #define TILE_COUNT 1
-#define SDL_CLEAR_COLOR colors[WHITE]
+#define SDL_CLEAR_COLOR colors[BLACK]
+#define SCENE_COUNT 5
+
+#define TILE_DRAWING_OFFSET_Y 60
 
 //#define POST_PIXEL_PROCESS
 //#define POST_PIXEL_PROCESSES_COUNT 1
@@ -35,6 +38,12 @@
 #include "map_editor/map.h"
 #include "utilities/tile_helper.h"
 #include "utilities/collision.h"
+#include "scene.h"
+#include "scenes/game_scene.h"
+#include "scenes/menu_scene.h"
+#include "scenes/settings_scene.h"
+#include "scenes/credits_scene.h"
+#include "scenes/configuration_scene.h"
 
 /**
  * Character representation of font atlas in file: "bin/main_texture_sheet.bmp".
@@ -56,7 +65,7 @@
 /**
  * Fixed height of window, used in global initialization.
 **/
-#define WINDOW_HEIGHT 960
+#define WINDOW_HEIGHT 1024
 
 /**
  * Fixed position x of window, used in global initialization.
@@ -66,8 +75,7 @@
 /**
  * Fixed position y of window, used in global initialization.
 **/
-#define WINDOW_POSITION_y 0
-
+#define WINDOW_POSITION_Y 0
 
 #define PI 3.14159265359
 
@@ -77,24 +85,6 @@
         .type = BLOCK_TILE,                 \
         .draw_tile_f = draw_tile            \
     }                                       \
-
-#define DRAW_RECTANGLE(global, rectangle, rectangle_color)          \
-    SDL_SetRenderDrawColor(global->renderer, rectangle_color.r,     \
-        rectangle_color.g, rectangle_color.b, 255);                 \
-    SDL_RenderFillRect(global->renderer, rectangle);                \
-
-#define DRAW_BORDER_RECTANGLE(global, rectangle, rectangle_color)   \
-    SDL_SetRenderDrawColor(global->renderer, rectangle_color.r,     \
-        rectangle_color.g, rectangle_color.b, 255);                 \
-    SDL_RenderDrawRect(global->renderer, rectangle);                \
-
-#define EXECUTE_DIRECTION_ANIMATION(interactive_entity, animation_direction, atlas, frames)                 \
-    if(interactive_entity.base_direction != animation_direction || interactive_entity.is_entity_idle) {     \
-        atlas.textures = frames[animation_direction].animation_frames;                                      \
-        atlas.textures_count = frames[animation_direction].frames_limit_count;                              \
-        atlas.texture_index = 0;                                                                            \
-        interactive_entity.base_direction = animation_direction;                                            \
-    }                                                                                                       \
 
 /**
  * Global extern initialization of manualy created tiles.
@@ -109,132 +99,52 @@ tile_information tile_informations[TILE_COUNT] = {
     },
 };
 
-/**
- * Initialized infromations about tiles from loaded map.
-**/
-map_information map_tiles_information;
+scene engine_scenes[SCENE_COUNT] = {
+    (scene) {
+        .identificator_name = "MENU SCENE",
+        .identificator = 0,
+        .execute_initialization = true,
 
+        .initialization = initialization_menu_scene,
+        .update = update_menu_scene,
+        .render = render_menu_scene
+    },
+    (scene) {
+        .identificator_name = "GAME SCENE",
+        .identificator = 1,
+        .execute_initialization = true,
 
-typedef struct direction_frames {
-    tile_information animation_frames[4];
-    int frames_limit_count;
-} direction_frames;
+        .initialization = initialization_game_scene,
+        .update = update_game_scene,
+        .render = render_game_scene
+    },
+    (scene) {
+        .identificator_name = "SETTINGS SCENE",
+        .identificator = 2,
+        .execute_initialization = true,
 
-static direction_frames idle_frames[4] = {
-    [NORTH] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 2),
-            INDEXED_ANIMATION_TILE(11, 2),
-        },
-        .frames_limit_count = 2
+        .initialization = initialization_settings_scene,
+        .update = update_settings_scene,
+        .render = render_settings_scene
     },
-    [SOUTH] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 0),
-            INDEXED_ANIMATION_TILE(11, 0),
-        },
-        .frames_limit_count = 2
-    },
-    [WEST] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 7),
-            INDEXED_ANIMATION_TILE(11, 7),
-        },
-        .frames_limit_count = 2
-    },
-    [EAST] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 1),
-            INDEXED_ANIMATION_TILE(11, 1),
-        },
-        .frames_limit_count = 2
-    },
-};
+    (scene) {
+        .identificator_name = "CREDITS SCENE",
+        .identificator = 3,
+        .execute_initialization = true,
 
-static direction_frames running_frames[4] = {
-    [NORTH] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 5),
-            INDEXED_ANIMATION_TILE(11, 5),
-            INDEXED_ANIMATION_TILE(12, 5),
-            INDEXED_ANIMATION_TILE(13, 5),
-        },
-        .frames_limit_count = 4
+        .initialization = initialization_credits_scene,
+        .update = update_credits_scene,
+        .render = render_credits_scene
     },
-    [SOUTH] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 3),
-            INDEXED_ANIMATION_TILE(11, 3),
-            INDEXED_ANIMATION_TILE(12, 3),
-            INDEXED_ANIMATION_TILE(13, 3),
-        },
-        .frames_limit_count = 4
-    },
-    [WEST] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 6),
-            INDEXED_ANIMATION_TILE(11, 6),
-            INDEXED_ANIMATION_TILE(12, 6),
-            INDEXED_ANIMATION_TILE(13, 6),
-        },
-        .frames_limit_count = 4
-    },
-    [EAST] = (direction_frames) {
-        .animation_frames = {
-            INDEXED_ANIMATION_TILE(10, 4),
-            INDEXED_ANIMATION_TILE(11, 4),
-            INDEXED_ANIMATION_TILE(12, 4),
-            INDEXED_ANIMATION_TILE(13, 4),
-        },
-        .frames_limit_count = 4
-    },
-};
+    (scene) {
+        .identificator_name = "CONFIGURATION SCENE",
+        .identificator = 4,
+        .execute_initialization = true,
 
-animation_atlas player_animation_configuration = (animation_atlas) {
-    .type = REPEAT,
-
-    .color = (color) { 255, 255, 255 },
-    .key_frame_speed = 200
-};
-
-static player_entity player = (player_entity) {
-    .last_player_position = (vector2) { 64, 64 },
-    .base_interactive_entity = &(interactive_entity_t) {
-        .base_entity = (entity_t) {
-            .position = (vector2) { 64, 64 },
-            .size = (vector2) { 48, 48 },
-            .collision_box_offset = (vector2) { 8, 0 },
-            .collision_box_size = (vector2) { 32, 48 },
-            .atlas = &player_animation_configuration,
-        },
-        .base_direction = SOUTH,
-        .is_entity_idle = false
-    },
-
-    .current_weapon = &weapons[PISTOL],
-    .is_shooting = false, .is_weapon_changed = true,
-};
-
-enum { BULLETS, PLAYER };
-light_state default_light_states[WORLD_LIGHT_ACTIONS_COUNT] = {
-    [BULLETS] = (light_state) {
-        .configuration = &(lighting_configuration) {
-            .range = 4,
-            .offset = 2,
-            .precision = 4 
-        },
-        .tag = MULTIPLE_VOID,
-        .action = bullet_lighting_action
-    },
-    [PLAYER] = (light_state) {
-        .tag = SINGLE,
-        .action = player_lighting_action
+        .initialization = initialization_configuration_scene,
+        .update = update_configuration_scene,
+        .render = render_configuration_scene
     }
-};
-
-entity_t get_bullet_entity(void *data) {
-    struct bullet *relative_bullet = (struct bullet*)data;
-    return relative_bullet->bullet_interactive_entity.base_entity;
 };
 
 void initialization(global_engine_information *global) {
@@ -255,200 +165,15 @@ void initialization(global_engine_information *global) {
         .tile_offset_size = (vector2) { .x = 64, .y = 64 }
     });
 
-    /**
-     * Thirdly we load our specified map, which is
-     * deserialized into map_tile structure.
-    **/
-    map_tiles_information = load_map_tiles("map_editor/test.bin");
-
-
-    default_light_states[PLAYER].position_entity = &(player.base_interactive_entity->base_entity);
-    default_light_states[PLAYER].configuration = &player_lighting_configuration;
-
-    default_light_states[BULLETS].anonymous_entities = malloc(sizeof(void*) * 1024);
-    default_light_states[BULLETS].get_entity = &get_bullet_entity;
-
-    game_state = malloc(sizeof(game_state_information));
-    game_state->game_time = 120;
-    game_state->round_time = 10;
-
-    start_time = time(NULL);
+    execute_scene_initialization(&engine_scenes[current_scene_identificator], global);
 }
 
 void update(global_engine_information *global, float delta_time) {
-    /**
-     * Use `SDL_GetKeyboardState` instead of `input_handler` for
-     * any precise movement implementations.
-    **/
-    const Uint8* keyboard_state = SDL_GetKeyboardState(NULL);
-    player.last_player_position = player.base_interactive_entity->base_entity.position;
-
-    if(keyboard_state[SDL_SCANCODE_W]) {
-        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), NORTH, player_animation_configuration, running_frames)
-
-        player.base_interactive_entity->base_entity.position.y -= 1.25 * delta_time;
-        set_weapon_direction_animation(player.current_weapon, NORTH);
-    }
-    if(keyboard_state[SDL_SCANCODE_S]) {
-        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), SOUTH, player_animation_configuration, running_frames)
-
-        player.base_interactive_entity->base_entity.position.y += 1.25 * delta_time;
-        set_weapon_direction_animation(player.current_weapon, SOUTH);
-    }
-    if(keyboard_state[SDL_SCANCODE_A]) {
-        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), WEST, player_animation_configuration, running_frames)
-
-        player.base_interactive_entity->base_entity.position.x -= 1.25 * delta_time;
-        set_weapon_direction_animation(player.current_weapon, WEST);
-    }
-    if(keyboard_state[SDL_SCANCODE_D]) {
-        EXECUTE_DIRECTION_ANIMATION((*player.base_interactive_entity), EAST, player_animation_configuration, running_frames)
-
-        player.base_interactive_entity->base_entity.position.x += 1.25 * delta_time;
-        set_weapon_direction_animation(player.current_weapon, EAST);
-    }
-
-    if((player.base_interactive_entity->base_entity.position.x != player.last_player_position.x || 
-        player.base_interactive_entity->base_entity.position.y != player.last_player_position.y)) {
-            player.base_interactive_entity->is_entity_idle = false;
-    }
-
-    if(keyboard_state[SDL_SCANCODE_SPACE]) {
-        if(execute_weapon_fire(&player)) {
-            default_light_states[BULLETS].anonymous_entities[default_light_states[BULLETS].count] =
-                &(bullets[default_light_states[BULLETS].count]);
-            default_light_states[BULLETS].count++;
-        }
-    }
-
-    //Used only for debug purposes
-    if(keyboard_state[SDL_SCANCODE_1]) { collision_offset++; }
-    if(keyboard_state[SDL_SCANCODE_2]) { collision_offset--; }
-
-    if(keyboard_state[SDL_SCANCODE_3]) { collision_precision++; }
-    if(keyboard_state[SDL_SCANCODE_4]) { collision_precision--; }
-
-    if(keyboard_state[SDL_SCANCODE_5]) { player_lighting_configuration.offset++; }
-    if(keyboard_state[SDL_SCANCODE_6]) { player_lighting_configuration.offset--; }
-
-    if(keyboard_state[SDL_SCANCODE_7]) { player_lighting_configuration.precision++; }
-    if(keyboard_state[SDL_SCANCODE_8]) { player_lighting_configuration.precision--; }
-
-    for (int i = 0; i < bullets_count; i++)
-    {
-        bullets[i].velocity = bullets[i].velocity < 5.0f ? bullets[i].velocity + 0.8f : bullets[i].velocity + 0.0f;
-        bullets[i].bullet_interactive_entity.base_entity.position = add(bullets[i].bullet_interactive_entity.base_entity.position, mul_value(directions[bullets[i].bullet_interactive_entity.base_direction], bullets[i].velocity * delta_time));
-    }
-
-    time_t previous_time = current_time;
-    current_time = time(NULL) - start_time;
-
-    game_state->timer_seconds = game_state->game_time - current_time;
-
-    if((current_time - previous_time) == 1 && current_time % game_state->round_time == 0) {
-        game_state->round_phase++;
-        player_lighting_configuration.offset = player_lighting_configuration.offset < 192 ?
-            player_lighting_configuration.offset : player_lighting_configuration.offset - (128 - (game_state->round_phase * 4));
-    }
+    execute_scene_update(&engine_scenes[current_scene_identificator], global, delta_time);
 }
 
 void render(global_engine_information *global) {
-    set_light_detection_positions(&default_light_states[BULLETS], map_tiles_information);
-    set_light_detection_positions(&default_light_states[PLAYER], map_tiles_information);
-
-    for (int i = 0; i < map_tiles_information.count; i++)
-    {
-        map_tile current_tile = map_tiles_information.tiles[i];
-        draw_tile(global->renderer, current_tile.tile,
-            current_tile.position, colors[WHITE], current_tile.size, NULL);
-
-        for (int j = 0; j < WORLD_LIGHT_ACTIONS_COUNT; j++)
-        {
-            draw_light_state(global->renderer, &default_light_states[j], current_tile);
-        }
-
-        last_active_light_positions = NULL;
-        last_active_light_positions_count = 0;
-    }
-
-    vector2 *detection_tiles = get_detection_positions(player.base_interactive_entity->base_entity, map_tiles_information,
-        collision_range, collision_offset, collision_precision);
-    map_information collision_map = get_collision_tiles(player.base_interactive_entity->base_entity, map_tiles_information,
-        collision_range, collision_offset, collision_precision);
-
-    for (int i = 0; i < collision_precision; i++)
-    {
-        SDL_Rect detection_tile_rectangle = (SDL_Rect) {
-            .x = detection_tiles[i].x-2,
-            .y = detection_tiles[i].y-2,
-            .w = 68,
-            .h = 68 
-        };
-        //DRAW_BORDER_RECTANGLE(global, &detection_tile_rectangle, colors[RED]);
-    }
-
-    for (int i = 0; i < collision_map.count; i++)
-    {
-        map_tile current_tile = collision_map.tiles[i];
-
-        SDL_Rect detection_tile_rectangle = (SDL_Rect) {
-            .x = current_tile.position.x-2,
-            .y = current_tile.position.y-2,
-            .w = 68,
-            .h = 68 
-        };
-        //DRAW_BORDER_RECTANGLE(global, &detection_tile_rectangle, colors[BLUE]);
-
-        if(current_tile.tile.type == COLLISION_TILE && is_colliding(add(player.base_interactive_entity->base_entity.position,
-            player.base_interactive_entity->base_entity.collision_box_offset), player.base_interactive_entity->base_entity.collision_box_size,
-
-            current_tile.position, current_tile.size)) {
-            player.base_interactive_entity->base_entity.position = player.last_player_position;
-        }
-    }
-
-    free(detection_tiles);
-
-    u_long position_x = (u_long)player.base_interactive_entity->base_entity.position.x;
-    u_long position_y = (u_long)player.base_interactive_entity->base_entity.position.y;
-
-    vector2 log_message_x_position = sub(player.base_interactive_entity->base_entity.position, (vector2) { -8, 32 });
-    draw_log_message("x: ", "%lu", (void*)position_x,
-        log_message_x_position, colors[BLACK], global->font, 8);
-
-    vector2 log_message_y_position = sub(player.base_interactive_entity->base_entity.position, (vector2) { -8, 16 });
-    draw_log_message("y: ", "%lu", (void*)position_y,
-        log_message_y_position, colors[BLACK], global->font, 8);
-
-    if((player.base_interactive_entity->base_entity.position.x == player.last_player_position.x &&
-        player.base_interactive_entity->base_entity.position.y == player.last_player_position.y)) {
-            if(!player.base_interactive_entity->is_entity_idle) {
-                player_animation_configuration.textures = idle_frames[player.base_interactive_entity->base_direction].animation_frames;
-                player_animation_configuration.textures_count = idle_frames[player.base_interactive_entity->base_direction].frames_limit_count;
-
-                player_animation_configuration.texture_index = 0;
-                player.base_interactive_entity->is_entity_idle = true;
-            }
-    }
-
-    run_animation(player.base_interactive_entity->base_entity.atlas, global->renderer, player.base_interactive_entity->base_entity.position, player.base_interactive_entity->base_entity.size, NULL);
-    player.last_player_position = player.base_interactive_entity->base_entity.position;
-
-    for (int i = 0; i < bullets_count; i++)
-    {
-        tile_external_information bullet_external = (tile_external_information) { bullets[i].bullet_interactive_entity.base_direction * 90, get_relative_texture_flip(*player.base_interactive_entity)};
-
-        draw_tile(global->renderer, *bullets[i].bullet_interactive_entity.base_entity.texture,
-            bullets[i].bullet_interactive_entity.base_entity.position, colors[WHITE],
-                bullets[i].bullet_interactive_entity.base_entity.size, &bullet_external);
-    }
-    draw_linked_weapon(global->renderer, &player);
-
-    draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 12, 10 }, colors[BLUE], global->font, 32);
-    draw_log_message("Time: ", "%lu", (void*) (game_state->timer_seconds), (vector2) { 10, 8 }, colors[WHITE], global->font, 32);
-
-    draw_log_message("Phase: ", "%lu", (void*) (game_state->round_phase), (vector2) { 510, 10 }, colors[BLUE], global->font, 32);
-    draw_log_message("Phase: ", "%lu", (void*) (game_state->round_phase), (vector2) { 508, 8 }, colors[WHITE], global->font, 32);
+    execute_scene_render(&engine_scenes[current_scene_identificator], global);
 }
 
 int main() {
@@ -459,8 +184,8 @@ int main() {
     };
 
     global_engine_information engine_default_global = create_initialization_global(
-        SDL_CreateWindow("Test window", WINDOW_POSITION_X, WINDOW_POSITION_y,
-            WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL
+        SDL_CreateWindow("Test window", WINDOW_POSITION_X, WINDOW_POSITION_Y,
+            WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
         ), WINDOW_WIDTH, WINDOW_HEIGHT
     );
 

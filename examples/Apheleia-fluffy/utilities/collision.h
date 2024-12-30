@@ -13,4 +13,3 @@ bool is_colliding(vector2 origin_position, vector2 origin_size,
 
     return collision_x && collision_y;
 }
-

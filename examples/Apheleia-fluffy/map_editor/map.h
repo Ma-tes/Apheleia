@@ -1,11 +1,8 @@
 #pragma once
 
-#include "../../../src/drawing/tile.h"
-#include "../../../src/engine_utilities/engine_global.h"
-#include "../../../src/engine.h"
-#include "../../../src/font_system.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../../src/font_system.h"
 
 #define WRITE_FILE_MODE "w"
 #define READ_FILE_MODE "r"

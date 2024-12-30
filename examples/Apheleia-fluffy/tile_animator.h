@@ -1,10 +1,10 @@
 #pragma once
 
+#include <sys/time.h>
 #include "apheleia_fluffy_global.h"
 #include "../../src/drawing/tile.h"
 #include "../../src/drawing/color.h"
 #include "../../src/math/vector.h"
-#include <sys/time.h>
 
 enum animation_type {
     FIRE_FORGET,

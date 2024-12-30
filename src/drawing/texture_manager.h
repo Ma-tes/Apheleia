@@ -10,6 +10,14 @@
     #define MAX_TEXTURES 4
 #endif
 
+#if !defined(TILE_DRAWING_OFFSET_X)
+    #define TILE_DRAWING_OFFSET_X 0 
+#endif
+
+#if !defined(TILE_DRAWING_OFFSET_Y)
+    #define TILE_DRAWING_OFFSET_Y 0
+#endif
+
 enum image_file_type {
     PNG,
     JPG,
@@ -46,8 +54,8 @@ void render_texture_target(SDL_Renderer *renderer, vector2 tile_position, vector
     };
 
     SDL_Rect destination_texture_area = {
-        .x = (int)position.x,
-        .y = (int)position.y,
+        .x = TILE_DRAWING_OFFSET_X + (int)position.x,
+        .y = TILE_DRAWING_OFFSET_Y + (int)position.y,
         .w = (int)size.x,
         .h = (int)size.y
     };
@@ -65,8 +73,8 @@ void render_texture_target_ex(SDL_Renderer *renderer, vector2 tile_position,
     };
 
     SDL_Rect destination_texture_area = {
-        .x = (int)position.x,
-        .y = (int)position.y,
+        .x = TILE_DRAWING_OFFSET_X + (int)position.x,
+        .y = TILE_DRAWING_OFFSET_Y + (int)position.y,
         .w = (int)size.x,
         .h = (int)size.y
     };

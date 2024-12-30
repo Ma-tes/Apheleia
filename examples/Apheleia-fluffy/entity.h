@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <stdbool.h>
 #include "../../src/drawing/tile.h"
 #include "../../src/drawing/color.h"
 #include "../../src/math/vector.h"

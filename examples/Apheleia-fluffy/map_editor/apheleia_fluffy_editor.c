@@ -275,7 +275,7 @@ void initialization(global_engine_information *global) {
         .tile_offset_size = (vector2) { .x = 64, .y = 64 }
     });
 
-    set_editor_tiles(32, 10);
+    set_editor_tiles(0, 6);
 }
 
 void update(global_engine_information *global, float delta_time) {

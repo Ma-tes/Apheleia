@@ -10,7 +10,12 @@
 
 #define WEAPONS_COUNT 3
 #define WEAPONS_ANIMATION_COUNT 11
+
 #define BULLET_BUFFER 4096
+#define BULLET_SIZE (vector2) { 16, 16 }
+#define BULLET_ANIMATION_COUNT 8
+
+#define BULLET_EXPLOSION_SIZE (vector2) { 64, 64 }
 
 #define INDEXED_ANIMATION_TILE(x, y)        \
     (tile_information) {                    \
@@ -21,9 +26,16 @@
 
 static tile_information bullet_tile = INDEXED_ANIMATION_TILE(0, 10);
 
+typedef struct player_entity player_entity;
+
 struct bullet {
     float velocity;
+
+    bool is_active;
+    animation_atlas *explosion_atlas;
+
     interactive_entity_t bullet_interactive_entity;
+    player_entity *bullet_source_entity;
 } bullets[BULLET_BUFFER];
 
 static int bullets_count = 0;
@@ -39,9 +51,9 @@ typedef struct weapon {
     enum weapon_type type;
 
     entity_t *weapon_entity;
-    struct bullet last_bullet;
 
     int spread_bullet_count;
+    int bullet_maximum_count;
 
     int velocity_delay;
 } weapon;
@@ -54,8 +66,15 @@ typedef struct player_entity {
     weapon *current_weapon;
     bool is_weapon_changed;
 
+    uint health;
+    uint score;
+
+    uint lighting_charges_count;
+
     struct bullet *last_bullet;
+
     bool is_shooting;
+    int bullets_fired_index;
 } player_entity;
 
 static struct {
@@ -94,34 +113,6 @@ static struct {
     },
     [RIFLE] = {
         .shoot_animation_frames = {
-            INDEXED_ANIMATION_TILE(0, 18),
-            INDEXED_ANIMATION_TILE(1, 18),
-            INDEXED_ANIMATION_TILE(2, 18),
-            INDEXED_ANIMATION_TILE(3, 18),
-            INDEXED_ANIMATION_TILE(4, 18),
-            INDEXED_ANIMATION_TILE(5, 18),
-            INDEXED_ANIMATION_TILE(6, 18),
-            INDEXED_ANIMATION_TILE(7, 18),
-            INDEXED_ANIMATION_TILE(8, 18),
-            INDEXED_ANIMATION_TILE(9, 18),
-            INDEXED_ANIMATION_TILE(10, 18),
-        },
-        .top_shoot_animation_frames = {
-            INDEXED_ANIMATION_TILE(0, 19),
-            INDEXED_ANIMATION_TILE(1, 19),
-            INDEXED_ANIMATION_TILE(2, 19),
-            INDEXED_ANIMATION_TILE(3, 19),
-            INDEXED_ANIMATION_TILE(4, 19),
-            INDEXED_ANIMATION_TILE(5, 19),
-            INDEXED_ANIMATION_TILE(6, 19),
-            INDEXED_ANIMATION_TILE(7, 19),
-            INDEXED_ANIMATION_TILE(8, 19),
-            INDEXED_ANIMATION_TILE(9, 19),
-            INDEXED_ANIMATION_TILE(10, 19),
-        }
-    },
-    [SHOTGUN] = {
-        .shoot_animation_frames = {
             INDEXED_ANIMATION_TILE(0, 20),
             INDEXED_ANIMATION_TILE(1, 20),
             INDEXED_ANIMATION_TILE(2, 20),
@@ -147,7 +138,46 @@ static struct {
             INDEXED_ANIMATION_TILE(9, 21),
             INDEXED_ANIMATION_TILE(10, 21),
         }
+    },
+    [SHOTGUN] = {
+        .shoot_animation_frames = {
+            INDEXED_ANIMATION_TILE(0, 18),
+            INDEXED_ANIMATION_TILE(1, 18),
+            INDEXED_ANIMATION_TILE(2, 18),
+            INDEXED_ANIMATION_TILE(3, 18),
+            INDEXED_ANIMATION_TILE(4, 18),
+            INDEXED_ANIMATION_TILE(5, 18),
+            INDEXED_ANIMATION_TILE(6, 18),
+            INDEXED_ANIMATION_TILE(7, 18),
+            INDEXED_ANIMATION_TILE(8, 18),
+            INDEXED_ANIMATION_TILE(9, 18),
+            INDEXED_ANIMATION_TILE(10, 18),
+        },
+        .top_shoot_animation_frames = {
+            INDEXED_ANIMATION_TILE(0, 19),
+            INDEXED_ANIMATION_TILE(1, 19),
+            INDEXED_ANIMATION_TILE(2, 19),
+            INDEXED_ANIMATION_TILE(3, 19),
+            INDEXED_ANIMATION_TILE(4, 19),
+            INDEXED_ANIMATION_TILE(5, 19),
+            INDEXED_ANIMATION_TILE(6, 19),
+            INDEXED_ANIMATION_TILE(7, 19),
+            INDEXED_ANIMATION_TILE(8, 19),
+            INDEXED_ANIMATION_TILE(9, 19),
+            INDEXED_ANIMATION_TILE(10, 19),
+        }
     }
+};
+
+static tile_information bullet_explosion_frames[BULLET_ANIMATION_COUNT] = {
+    INDEXED_ANIMATION_TILE(17, 12),
+    INDEXED_ANIMATION_TILE(18, 12),
+    INDEXED_ANIMATION_TILE(19, 12),
+    INDEXED_ANIMATION_TILE(20, 12),
+    INDEXED_ANIMATION_TILE(21, 12),
+    INDEXED_ANIMATION_TILE(22, 12),
+    INDEXED_ANIMATION_TILE(23, 12),
+    INDEXED_ANIMATION_TILE(24, 12),
 };
 
 static weapon weapons[WEAPONS_COUNT] = {
@@ -165,8 +195,9 @@ static weapon weapons[WEAPONS_COUNT] = {
             },
             .size = (vector2) { 64, 64 }
         },
-        .velocity_delay = 200,
+        .velocity_delay = 400,
         .spread_bullet_count = 1,
+        .bullet_maximum_count = -1
     },
     [RIFLE] = (weapon) {
         .name = "Rifle",
@@ -182,8 +213,9 @@ static weapon weapons[WEAPONS_COUNT] = {
             },
             .size = (vector2) { 64, 64 }
         },
-        .velocity_delay = 50,
+        .velocity_delay = 25,
         .spread_bullet_count = 1,
+        .bullet_maximum_count = 32
     },
     [SHOTGUN] = (weapon) {
         .name = "Shotgun",
@@ -201,8 +233,12 @@ static weapon weapons[WEAPONS_COUNT] = {
         },
         .velocity_delay = 750,
         .spread_bullet_count = 5,
+        .bullet_maximum_count = 8
     }
 };
+
+static tile_information remain_bullet_tile = INDEXED_ANIMATION_TILE(8, 0);
+static vector2 remain_bullet_tile_size = (vector2) { 16, 16 };
 
 void create_weapon_bullets(weapon relative_weapon, player_entity *relative_entity) {
     direction entity_direction = relative_entity->base_interactive_entity->base_direction;
@@ -218,24 +254,27 @@ void create_weapon_bullets(weapon relative_weapon, player_entity *relative_entit
             .base_entity = (entity_t) {
                 .position = bullet_position,
                 .collision_box_size = (vector2) { 18, 18 },
-                .size = (vector2) { 16, 16 },
+                .size = BULLET_SIZE,
                 .texture = &bullet_tile
             },
             .base_direction = entity_direction,
             .is_entity_idle = false
         },
+        .bullet_source_entity = relative_entity,
+        .is_active = true
     };
 
     relative_entity->last_bullet = &(bullets[bullets_count - 1]);
     relative_entity->is_shooting = true;
+    relative_entity->bullets_fired_index++;
 }
 
 void set_weapon_direction_animation(weapon *relative_weapon, direction relative_direction) {
     enum weapon_type current_weapon_type = relative_weapon->type;
 
     relative_weapon->weapon_entity->atlas->textures = relative_direction == NORTH || relative_direction == SOUTH ?
-        &weapons_animation_frames[current_weapon_type].top_shoot_animation_frames[0] :
-        &weapons_animation_frames[current_weapon_type].shoot_animation_frames[0];
+        weapons_animation_frames[current_weapon_type].top_shoot_animation_frames :
+        weapons_animation_frames[current_weapon_type].shoot_animation_frames;
 }
 
 bool execute_weapon_fire(player_entity *entity) {
@@ -254,9 +293,11 @@ bool execute_weapon_fire(player_entity *entity) {
         .y = abs(last_bullet_position.y - entity->base_interactive_entity->base_entity.position.y)
     };
 
+    bool is_last_bullet_active = entity->last_bullet->is_active;
+
     last_bullet_distance = mul(last_bullet_distance, directions[last_bullet_direction]);
 
-    if((bullets_count == 0 || (abs(last_bullet_distance.x) > entity->current_weapon->velocity_delay ||
+    if((bullets_count == 0 || !is_last_bullet_active || (abs(last_bullet_distance.x) > entity->current_weapon->velocity_delay ||
         abs(last_bullet_distance.y) > entity->current_weapon->velocity_delay))) {
 
         create_weapon_bullets(*entity->current_weapon, entity);
@@ -301,4 +342,18 @@ void draw_linked_weapon(SDL_Renderer *renderer, player_entity *relative_entity) 
     }
 }
 
+void draw_weapon_bullets(SDL_Renderer *renderer, player_entity player) {
+    int current_bullets_count = player.current_weapon->bullet_maximum_count - player.bullets_fired_index;
+    vector2 player_position = player.base_interactive_entity->base_entity.position;
 
+    for (int i = 0; i < current_bullets_count; i++)
+    {
+        vector2 bullet_position = (vector2) {
+            .x = player_position.x + (i * (remain_bullet_tile_size.x / 4)),
+            .y = player_position.y - 24
+        };
+
+        draw_tile(renderer, remain_bullet_tile, bullet_position,
+            colors[WHITE], remain_bullet_tile_size, NULL);
+    }
+}
