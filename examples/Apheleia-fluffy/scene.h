@@ -5,10 +5,6 @@
 #include "../../src/engine.h"
 #include "../../src/engine_utilities/engine_global.h"
 
-#if !defined(SCENE_COUNT) 
-    #define SCENE_COUNT 1
-#endif
-
 typedef struct scene {
     const char *identificator_name;
     int identificator;
@@ -19,8 +15,6 @@ typedef struct scene {
     update_function update;
     render_function render;
 } scene;
-
-extern scene engine_scenes[SCENE_COUNT];
 
 void execute_scene_initialization(scene *relative_scene, global_engine_information *global) {
     if(!relative_scene->execute_initialization) {

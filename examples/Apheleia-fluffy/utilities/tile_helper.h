@@ -2,8 +2,17 @@
 
 #include "../map_editor/map.h"
 #include "../../../src/math/vector.h"
+#include "../../../src/math/random.h"
 
 typedef struct entity entity_t;
+
+map_tile get_random_tile(map_information map, enum tile_type type) {
+    map_tile random_tile = map.tiles[random_range(0, map.count - 1)];
+    while(random_tile.tile.type != type) {
+        random_tile = map.tiles[random_range(0, map.count - 1)];
+    }
+    return random_tile;
+}
 
 vector2 get_tile_position(vector2 position, int tile_size) {
     return (vector2) {

@@ -35,6 +35,7 @@
 #define MENU_SELECTION_POSITION (vector2) { 600, 600 }
 
 static int current_configuration_index = 0;
+static tile_information star_tile = INDEXED_ANIMATION_TILE(6, 0);
 
 static selection_element map_selection = (selection_element) {
     .items_count = MAP_SELECTION_ITEMS, 
@@ -219,6 +220,10 @@ void render_configuration_scene(global_engine_information *global) {
 
     draw_text("WEAPON", MODIFY_ADD_VECTOR(WEAPON_SELECTION_POSITION, -15, -80), colors[GREEN], global->font, 24);
     draw_text("WEAPON", MODIFY_ADD_VECTOR(WEAPON_SELECTION_POSITION, -17, -78), colors[WHITE], global->font, 24);
+
+    int star_position_x = (((current_configuration_index % 2)) * 550) + 250;
+    int star_position_y = current_configuration_index > 1 ? 500 : 200;
+    draw_tile(global->renderer, star_tile, (vector2) { star_position_x, star_position_y }, colors[WHITE], (vector2) { 64, 64 }, NULL);
  
     for (int i = 0; i < CONFIGURATION_COUNT; i++)
     {

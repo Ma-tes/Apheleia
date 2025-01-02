@@ -125,7 +125,7 @@ void update(global_engine_information *global, float delta_time) {
 
 void render(global_engine_information *global) {
     tile_informations[0].draw_tile_f(global->renderer, tile_informations[0],
-        *sprite_position, colors[WHITE], (vector2) { 64, 64 });
+        *sprite_position, colors[WHITE], (vector2) { 64, 64 }, NULL);
 
     u_long position_x = (u_long)sprite_position->x;
     u_long position_y = (u_long)sprite_position->y;

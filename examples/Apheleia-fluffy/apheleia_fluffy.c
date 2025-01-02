@@ -14,7 +14,6 @@
 **/
 #define TILE_COUNT 1
 #define SDL_CLEAR_COLOR colors[BLACK]
-#define SCENE_COUNT 5
 
 #define TILE_DRAWING_OFFSET_Y 60
 
@@ -44,6 +43,8 @@
 #include "scenes/settings_scene.h"
 #include "scenes/credits_scene.h"
 #include "scenes/configuration_scene.h"
+#include "scenes/score_scene.h"
+#include "scenes/pause_scene.h"
 
 /**
  * Character representation of font atlas in file: "bin/main_texture_sheet.bmp".
@@ -144,6 +145,24 @@ scene engine_scenes[SCENE_COUNT] = {
         .initialization = initialization_configuration_scene,
         .update = update_configuration_scene,
         .render = render_configuration_scene
+    },
+    (scene) {
+        .identificator_name = "SCORE SCENE",
+        .identificator = 5,
+        .execute_initialization = true,
+
+        .initialization = initialization_score_scene,
+        .update = update_score_scene,
+        .render = render_score_scene
+    },
+    (scene) {
+        .identificator_name = "PAUSE SCENE",
+        .identificator = 6,
+        .execute_initialization = true,
+
+        .initialization = initialization_pause_scene,
+        .update = update_pause_scene,
+        .render = render_pause_scene
     }
 };
 

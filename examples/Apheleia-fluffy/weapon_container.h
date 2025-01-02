@@ -11,7 +11,7 @@
 #define WEAPONS_COUNT 3
 #define WEAPONS_ANIMATION_COUNT 11
 
-#define BULLET_BUFFER 4096
+#define BULLET_BUFFER 12960
 #define BULLET_SIZE (vector2) { 16, 16 }
 #define BULLET_ANIMATION_COUNT 8
 
@@ -36,8 +36,9 @@ struct bullet {
 
     interactive_entity_t bullet_interactive_entity;
     player_entity *bullet_source_entity;
-} bullets[BULLET_BUFFER];
+};
 
+static struct bullet *bullets;
 static int bullets_count = 0;
 
 enum weapon_type {
@@ -64,6 +65,8 @@ typedef struct player_entity {
     vector2 last_player_position;
 
     weapon *current_weapon;
+    animation_atlas *weapon_atlas;
+
     bool is_weapon_changed;
 
     uint health;
@@ -75,6 +78,9 @@ typedef struct player_entity {
 
     bool is_shooting;
     int bullets_fired_index;
+
+    int total_bullets_fired;
+    int identificator;
 } player_entity;
 
 static struct {
@@ -240,6 +246,9 @@ static weapon weapons[WEAPONS_COUNT] = {
 static tile_information remain_bullet_tile = INDEXED_ANIMATION_TILE(8, 0);
 static vector2 remain_bullet_tile_size = (vector2) { 16, 16 };
 
+static tile_information player_health_tile = INDEXED_ANIMATION_TILE(7, 0);
+static vector2 player_health_tile_size = (vector2) { 16, 16 };
+
 void create_weapon_bullets(weapon relative_weapon, player_entity *relative_entity) {
     direction entity_direction = relative_entity->base_interactive_entity->base_direction;
 
@@ -267,12 +276,13 @@ void create_weapon_bullets(weapon relative_weapon, player_entity *relative_entit
     relative_entity->last_bullet = &(bullets[bullets_count - 1]);
     relative_entity->is_shooting = true;
     relative_entity->bullets_fired_index++;
+    relative_entity->total_bullets_fired++;
 }
 
-void set_weapon_direction_animation(weapon *relative_weapon, direction relative_direction) {
-    enum weapon_type current_weapon_type = relative_weapon->type;
+void set_weapon_direction_animation(player_entity *player, direction relative_direction) {
+    enum weapon_type current_weapon_type = player->current_weapon->type;
 
-    relative_weapon->weapon_entity->atlas->textures = relative_direction == NORTH || relative_direction == SOUTH ?
+    player->weapon_atlas->textures = relative_direction == NORTH || relative_direction == SOUTH ?
         weapons_animation_frames[current_weapon_type].top_shoot_animation_frames :
         weapons_animation_frames[current_weapon_type].shoot_animation_frames;
 }
@@ -320,16 +330,16 @@ void draw_linked_weapon(SDL_Renderer *renderer, player_entity *relative_entity) 
 
     tile_external_information weapon_external = (tile_external_information) { entity_direction * 90, get_relative_texture_flip(*relative_entity->base_interactive_entity)};
 
-    run_animation(relative_weapon->weapon_entity->atlas,
+    run_animation(relative_entity->weapon_atlas,
         renderer,
         relative_weapon->weapon_entity->position,
         relative_weapon->weapon_entity->size,
         &weapon_external);
     
-    animation_atlas current_atlas = *relative_weapon->weapon_entity->atlas;
+    animation_atlas current_atlas = *relative_entity->weapon_atlas;
 
     if(relative_entity->is_shooting) {
-        relative_weapon->weapon_entity->atlas->texture_index = 0;
+        relative_entity->weapon_atlas->texture_index = 0;
         relative_entity->is_shooting = false;
     }
     else {
@@ -356,4 +366,28 @@ void draw_weapon_bullets(SDL_Renderer *renderer, player_entity player) {
         draw_tile(renderer, remain_bullet_tile, bullet_position,
             colors[WHITE], remain_bullet_tile_size, NULL);
     }
+}
+
+void draw_player_health(SDL_Renderer *renderer, player_entity player) {
+    vector2 player_position = player.base_interactive_entity->base_entity.position;
+
+    for (int i = 0; i < player.health; i++)
+    {
+        vector2 bullet_position = (vector2) {
+            .x = player_position.x + (i * player_health_tile_size.x),
+            .y = player_position.y - 42
+        };
+
+        draw_tile(renderer, player_health_tile, bullet_position,
+            colors[WHITE], player_health_tile_size, NULL);
+    }
+}
+
+void create_bullets_memory(void) {
+    if(bullets != NULL) {
+        free(bullets);
+    }
+
+    bullets = malloc(sizeof(struct bullet) * BULLET_BUFFER);
+    bullets_count = 0;
 }
