@@ -76,14 +76,20 @@ void initialization_game_scene(global_engine_information *global) {
     map_tiles_information = load_map_tiles(map_paths[game_configuration.map_index]);
 
     game_state = (game_state_information*)malloc(sizeof(game_state_information));
-    game_state->game_time = 120;
+    game_state->game_time = 30;
     game_state->round_time = 10;
-    game_state->player_light = player_lighting_configuration;
+    game_state->player_light = (lighting_configuration) {
+        .range = 32,
+        .offset = 480,
+        .precision = 64
+    };
 
     default_light_states[PLAYER].position_entity = &(player.base_interactive_entity->base_entity);
-    default_light_states[PLAYER].configuration = &player_lighting_configuration;
+    default_light_states[PLAYER].configuration = &game_state->player_light;
 
     player.health = 3;
+    player.score = 0;
+
     player.last_player_position = PLAYER_SPAWN_POSITION;
     player.base_interactive_entity->base_entity.position = PLAYER_SPAWN_POSITION;
     player.current_weapon = &weapons[game_configuration.weapon_index];
@@ -117,7 +123,6 @@ void initialization_game_scene(global_engine_information *global) {
 
     create_bullets_memory();
     start_time = time(NULL);
-
 }
 
 void update_game_scene(global_engine_information *global, float delta_time) {
@@ -156,12 +161,6 @@ void update_game_scene(global_engine_information *global, float delta_time) {
     if(global->input_handler->buttons[SDL_SCANCODE_ESCAPE].is_key_pressed) {
         current_scene_identificator = PAUSE_SCENE;
     }
-
-    if(keyboard_state[SDL_SCANCODE_5]) { player_lighting_configuration.offset++; }
-    if(keyboard_state[SDL_SCANCODE_6]) { player_lighting_configuration.offset--; }
-
-    if(keyboard_state[SDL_SCANCODE_7]) { player_lighting_configuration.precision++; }
-    if(keyboard_state[SDL_SCANCODE_8]) { player_lighting_configuration.precision--; }
 
     if((player.base_interactive_entity->base_entity.position.x != player.last_player_position.x || 
         player.base_interactive_entity->base_entity.position.y != player.last_player_position.y)) {
@@ -202,6 +201,7 @@ void update_game_scene(global_engine_information *global, float delta_time) {
 
         if(current_enemy.path == NULL) {
             if(generate_enemy_destination(&current_enemy, global_entities, entities_index, map_tiles_information)) {
+
                 free_path_node(current_enemy.path);
                 free_path_node(current_enemy.current_path_node);
 
@@ -209,7 +209,6 @@ void update_game_scene(global_engine_information *global, float delta_time) {
                 current_enemy.current_path_node = current_enemy.path;
             }
         }
-
         if(current_enemy.path != NULL) {
             current_enemy.base_player_entity.base_interactive_entity->is_entity_idle = false;
             follow_path_node(global, &current_enemy, delta_time);
@@ -251,8 +250,8 @@ void update_game_scene(global_engine_information *global, float delta_time) {
     if((current_time - previous_time) == 1 && current_time % game_state->round_time == 0) {
         game_state->round_phase++;
 
-        player_lighting_configuration.offset = player_lighting_configuration.offset < 192 ?
-            player_lighting_configuration.offset : player_lighting_configuration.offset - (128 - (game_state->round_phase * 4));
+        game_state->player_light.offset = game_state->player_light.offset < 192 ?
+            game_state->player_light.offset : game_state->player_light.offset - (128 - (game_state->round_phase * 4));
     }
 
     if((current_time - previous_time) == 1 && current_time % weapon_item_spawn_length == 0) {

@@ -104,7 +104,7 @@ SDL_Texture* create_texture(const char* path, enum image_file_type type, SDL_Ren
 
 void add_texture_atlas(texture_atlas_information texture_atlas) {
     if(textures_storage.textures == NULL) {
-        textures_storage.textures = malloc(sizeof(texture_atlas_information) * MAX_TEXTURES);
+        textures_storage.textures = (texture_atlas_information*)malloc(sizeof(texture_atlas_information) * MAX_TEXTURES);
     }
 
     textures_storage.textures[textures_storage.count] = texture_atlas;

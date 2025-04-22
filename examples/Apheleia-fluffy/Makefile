@@ -14,6 +14,11 @@ ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	CFLAGS := -I/usr/local/include/sdl -L/usr/local/lib -lSDL2
+endif 
+
 C_SUFFIX := .c
 O_SUFFIX := .o
 

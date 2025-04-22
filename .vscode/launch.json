@@ -26,8 +26,34 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/Apheleia-fluffy",
-      "program": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/Apheleia-fluffy/build/Debug/outDebug"
+      "cwd": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/04-drawing-shapes",
+      "program": "/Users/mates/Projects/School/VSB-Lectures/UPR/Projects/Apheleia/examples/04-drawing-shapes/build/Debug/outDebug"
+    },
+    {
+      "name": "C/C++: g++-14 sestavit a ladit aktivní soubor",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${fileDirname}/${fileBasenameNoExtension}",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "C/C++: g++-14 sestavit aktivní soubor"
+    },
+    {
+      "name": "C/C++: g++ sestavit a ladit aktivní soubor",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${fileDirname}/${fileBasenameNoExtension}",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "C/C++: g++ sestavit aktivní soubor"
     }
   ],
   "version": "2.0.0"

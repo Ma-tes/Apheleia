@@ -31,8 +31,8 @@ void set_pattern_font_tiles(font_information *font, vector2 start_font_index, co
         char *font_character = (char*)malloc(sizeof(char) * 1); font_character[0] = font_pattern[i];
 
         vector2 relative_position = {
-            .x = i % max_line_characters_count,
-            .y = i / max_line_characters_count
+            .x = (float)(i % max_line_characters_count),
+            .y = (float)(i / max_line_characters_count)
         };
 
         font->font_tiles[i] = (tile_information){
@@ -61,7 +61,7 @@ void draw_char(const char character, vector2 position, color current_color, font
     {
         tile_information current_tile = font->font_tiles[i];
         if(current_tile.name[0] == character) {
-            draw_tile(font->renderer, current_tile, position, current_color, (vector2) { size, size }, NULL);
+            draw_tile(font->renderer, current_tile, position, current_color, (vector2) { (float)size, (float)size }, NULL);
             return;
         }
     }
@@ -81,7 +81,7 @@ void draw_text(const char* text, vector2 position, color current_color, font_inf
             padding_index = -1;
         }
         else if(text[index] != SPACE_CHARACTER) {
-            draw_char(text[index], add(position, (vector2) { padding_index * size, line_position_y}), current_color, font, size);
+            draw_char(text[index], add(position, (vector2) { (float)(padding_index * size), (float)line_position_y}), current_color, font, size);
         }
         index++;
         padding_index++;

@@ -177,12 +177,6 @@ static int collision_precision = 64;
 static int weapon_item_spawn_length = 10;
 static int bullet_score_points = 150;
 
-static lighting_configuration player_lighting_configuration = (lighting_configuration) {
-    .range = 32,
-    .offset = 480,
-    .precision = 64
-};
-
 enum {
     MAIN_MENU_SCENE = 0,
     GAME_SCENE = 1,

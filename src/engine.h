@@ -29,8 +29,8 @@ global_engine_information create_initialization_global(SDL_Window *window, int w
     global_engine_information global_informations = {
         .window = window,
         .window_size = {
-            .x = width,
-            .y = height
+            .x = (float)width,
+            .y = (float)height
         },
         .framerate_limit = DEFAULT_FRAMERATE_LIMITATION
     };

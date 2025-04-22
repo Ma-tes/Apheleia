@@ -31,11 +31,12 @@ typedef void (*component_draw_f)(global_engine_information *global);
  * Futhermore it contains holder of components, events, inputs, fonts and
  * additional configuration/information fields.
 **/
+
 typedef struct global_engine_information {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Event *event;
-
+ 
     struct input *input_handler;
     font_information *font;
     vector2 window_size;

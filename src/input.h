@@ -61,7 +61,7 @@ typedef struct input {
  * allocation. Futhermore `cursor_input` positions are set to `ZERO_VECTOR2`.
 **/
 void create_input(input **input_a) {
-    *input_a = malloc(sizeof(input));
+    *input_a = (input*)malloc(sizeof(input));
     (*input_a)->cursor = (struct cursor_input) {
             .position = ZERO_VECTOR2,
             .tile_position = ZERO_VECTOR2

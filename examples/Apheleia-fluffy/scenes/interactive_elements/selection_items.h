@@ -29,8 +29,8 @@ typedef struct extended_color {
 } extended_color;
 
 typedef struct selection_item {
-    const char* name;
-
+    const char *name;
+  
     item_function item_action;
     vector2 position;
 } selection_item;

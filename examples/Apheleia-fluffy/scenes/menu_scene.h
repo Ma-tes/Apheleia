@@ -40,6 +40,10 @@ void credits_selection_action(global_engine_information *global) {
 }
 
 void quit_selection_action(global_engine_information *global) {
+    if(global->input_handler->buttons[SDL_SCANCODE_RETURN].is_key_pressed) {
+        SDL_Quit();
+        exit(1);
+    }
 }
 
 static selection_item main_items[4] = {

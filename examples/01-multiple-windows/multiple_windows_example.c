@@ -129,7 +129,7 @@ void render(global_engine_information *global) {
     {
         int relative_x_position = 150 * i;
         tile_informations[i].draw_tile_f(renderer, tile_informations[i],
-            (vector2) { relative_x_position, sprites_position.y }, colors[WHITE], (vector2) { 50, 50 });
+            (vector2) { relative_x_position, sprites_position.y }, colors[WHITE], (vector2) { 50, 50 }, NULL);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawLine(renderer, relative_x_position, sprites_position.y,
